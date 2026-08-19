@@ -23,6 +23,11 @@
       box-sizing: border-box;
     }
 
+    html {
+      min-width: 0;
+      overflow-x: hidden;
+    }
+
     body {
       font-family:
         'IBM Plex Sans',
@@ -186,6 +191,176 @@
 
     button {
       user-select: none;
+      min-height: 40px;
+      touch-action: manipulation;
+    }
+
+    .app-content {
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .panel-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .history-table-wrap,
+    .items-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .history-cards {
+      display: none;
+    }
+
+    .scanner-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(4, 12, 6, 0.72);
+    }
+
+    .scanner-modal {
+      width: min(100%, 520px);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .scanner-video {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      background: #071009;
+    }
+
+    .scanner-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (min-width: 760px) {
+      .app-shell {
+        padding: clamp(24px, 4vw, 48px) clamp(20px, 4vw, 56px) !important;
+      }
+
+      .desktop-main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+        gap: 20px;
+        align-items: start;
+      }
+
+      .desktop-main-grid > .panel-full {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 759px) {
+      .app-shell {
+        padding: 16px 12px !important;
+      }
+
+      .agro-header {
+        margin-bottom: 14px;
+        padding: 14px;
+      }
+
+      .brand-mark { min-width: 0; }
+      .brand-mark > div:last-child { min-width: 0; }
+      .brand-mark > div:last-child > div:first-child {
+        font-size: clamp(14px, 4vw, 18px) !important;
+        overflow-wrap: anywhere;
+      }
+
+      .metric-grid {
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .metric-card { padding: 11px 12px; }
+      .metric-card > div:last-child { font-size: 18px !important; }
+
+      .panel-actions { width: 100%; justify-content: stretch; }
+      .panel-actions > * { flex: 1 1 140px; }
+      .panel-actions button { width: 100%; }
+
+      .history-table-wrap { display: none; }
+      .history-cards { display: grid; gap: 8px; }
+      .history-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px 12px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface-soft);
+      }
+      .history-card-label {
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .history-card-value { overflow-wrap: anywhere; }
+      .history-card-code { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+
+      .items-table-wrap { overflow-x: visible; }
+      .items-table-wrap table { min-width: 0 !important; }
+      .items-table-wrap thead { display: none; }
+      .items-table-wrap tbody,
+      .items-table-wrap tr,
+      .items-table-wrap td { display: block; width: 100%; }
+      .items-table-wrap tr {
+        margin-bottom: 10px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+      }
+      .items-table-wrap td {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 7px 0 !important;
+        border-bottom: 1px solid var(--border) !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+      }
+      .items-table-wrap td:last-child { border-bottom: 0 !important; }
+
+      .reader-frame input { min-width: 0; font-size: clamp(16px, 5vw, 20px) !important; }
+      .reader-actions { display: grid !important; grid-template-columns: 1fr !important; }
+      .reader-actions button { width: 100%; min-height: 48px; }
+      .located-code { overflow-wrap: anywhere; }
+    }
+
+    @media (max-width: 380px) {
+      .metric-grid { grid-template-columns: 1fr 1fr; }
+      .metric-card > div:first-child { font-size: 9px !important; letter-spacing: .04em !important; }
+      .theme-toggle { width: 100%; justify-content: center; }
+    }
+
+    @media (min-width: 1200px) {
+      .desktop-main-grid { grid-template-columns: minmax(0, 1fr) minmax(390px, .85fr); }
     }
   </style>
 </head>
@@ -328,6 +503,13 @@
         Activity: (
           <svg {...common}>
             <path d="M3 12h4l2-7 4 14 2-7h6" />
+          </svg>
+        ),
+
+        Camera: (
+          <svg {...common}>
+            <path d="M4 7h3l1.5-2h7L17 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
+            <circle cx="12" cy="13" r="3.5" />
           </svg>
         )
       };
@@ -689,6 +871,9 @@
       const [history, setHistory] =
         useState([]);
 
+      const [showFullHistory, setShowFullHistory] =
+        useState(false);
+
       const [lastProcessedCode, setLastProcessedCode] =
         useState("");
 
@@ -719,6 +904,18 @@
       const searchInputRef =
         useRef(null);
 
+      const scannerVideoRef =
+        useRef(null);
+
+      const scannerStreamRef =
+        useRef(null);
+
+      const [scannerOpen, setScannerOpen] =
+        useState(false);
+
+      const [scannerStatus, setScannerStatus] =
+        useState("");
+
       useEffect(() => {
         loadHistory();
       }, []);
@@ -726,6 +923,87 @@
       useEffect(() => {
         localStorage.setItem("agro-material-theme", theme);
       }, [theme]);
+
+      useEffect(() => {
+        if (!scannerOpen) return undefined;
+
+        let cancelled = false;
+        let animationFrame = 0;
+
+        const stopStream = () => {
+          if (scannerStreamRef.current) {
+            scannerStreamRef.current.getTracks().forEach((track) => track.stop());
+            scannerStreamRef.current = null;
+          }
+        };
+
+        const scanFrame = async (detector) => {
+          if (cancelled || !scannerVideoRef.current) return;
+          try {
+            const results = await detector.detect(scannerVideoRef.current);
+            if (results.length > 0 && results[0].rawValue) {
+              const value = results[0].rawValue;
+              setScannerStatus("Leitura concluída");
+              if (navigator.vibrate) navigator.vibrate(120);
+              try {
+                const audio = new AudioContext();
+                const oscillator = audio.createOscillator();
+                const gain = audio.createGain();
+                oscillator.connect(gain);
+                gain.connect(audio.destination);
+                oscillator.frequency.value = 880;
+                gain.gain.setValueAtTime(0.08, audio.currentTime);
+                oscillator.start();
+                oscillator.stop(audio.currentTime + 0.12);
+              } catch (error) {
+              }
+              stopStream();
+              setScannerOpen(false);
+              processQRCode(value);
+              return;
+            }
+          } catch (error) {
+            setScannerStatus("Aponte a câmera para um QR Code");
+          }
+          animationFrame = requestAnimationFrame(() => scanFrame(detector));
+        };
+
+        const startScanner = async () => {
+          if (!navigator.mediaDevices?.getUserMedia) {
+            setScannerStatus("Câmera indisponível. Digite o código abaixo.");
+            return;
+          }
+          if (!window.BarcodeDetector) {
+            setScannerStatus("Este navegador não detecta QR automaticamente. Digite o código abaixo.");
+            return;
+          }
+          try {
+            setScannerStatus("Solicitando acesso à câmera...");
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: "environment" } },
+              audio: false
+            });
+            if (cancelled || !scannerVideoRef.current) {
+              stream.getTracks().forEach((track) => track.stop());
+              return;
+            }
+            scannerStreamRef.current = stream;
+            scannerVideoRef.current.srcObject = stream;
+            await scannerVideoRef.current.play();
+            setScannerStatus("Aponte a câmera para um QR Code");
+            scanFrame(new BarcodeDetector({ formats: ["qr_code"] }));
+          } catch (error) {
+            setScannerStatus("Não foi possível acessar a câmera. Verifique a permissão.");
+          }
+        };
+
+        startScanner();
+        return () => {
+          cancelled = true;
+          cancelAnimationFrame(animationFrame);
+          stopStream();
+        };
+      }, [scannerOpen]);
 
       /* =====================================================
          ESTADOS DERIVADOS
@@ -1292,12 +1570,7 @@
             ))}
           </div>
 
-          <div
-            style={{
-              maxWidth: 1200,
-              margin: "0 auto"
-            }}
-          >
+          <div className="app-content">
 
 
             {/* =================================================
@@ -2285,6 +2558,57 @@
                   </div>
 
 
+                  <div className="reader-actions" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 10, marginTop: 12 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScannerStatus("");
+                        setScannerOpen(true);
+                      }}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        minHeight: 48,
+                        padding: "12px 16px",
+                        border: "none",
+                        borderRadius: 6,
+                        background: "var(--accent-dark)",
+                        color: "#fff",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        letterSpacing: "0.04em"
+                      }}
+                    >
+                      <Icon name="Camera" size={19} />
+                      LER QR CODE
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => runSearch(query)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        minHeight: 48,
+                        padding: "12px 16px",
+                        border: `1px solid ${LINE_STRONG}`,
+                        borderRadius: 6,
+                        background: "transparent",
+                        color: "var(--text)",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        letterSpacing: "0.04em"
+                      }}
+                    >
+                      <Icon name="Search" size={18} />
+                      CONSULTAR
+                    </button>
+                  </div>
+
+
                   {/* SUGESTÕES */}
 
                   {query &&
@@ -2700,7 +3024,7 @@
               title="Histórico de leituras"
               active={true}
               trailing={
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div className="panel-actions">
                   <div
                     style={{
                       display: "flex",
@@ -2751,6 +3075,21 @@
                   >
                     Limpar histórico
                   </button>
+                  <button
+                    onClick={() => setShowFullHistory((current) => !current)}
+                    disabled={history.length <= 10}
+                    style={{
+                      border: `1px solid ${history.length > 10 ? GREEN : LINE_STRONG}`,
+                      borderRadius: 4,
+                      padding: "6px 10px",
+                      background: "transparent",
+                      color: history.length > 10 ? GREEN : INK_SOFT,
+                      cursor: history.length > 10 ? "pointer" : "not-allowed",
+                      fontSize: 12
+                    }}
+                  >
+                    {showFullHistory ? "MOSTRAR ÚLTIMOS 10" : "VER HISTÓRICO COMPLETO"}
+                  </button>
                 </div>
               }
             >
@@ -2759,7 +3098,8 @@
                   Os QR Codes bipados aparecerão aqui.
                 </div>
               ) : (
-                <div style={{ overflowX: "auto" }}>
+                <>
+                <div className="history-table-wrap">
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
                     <thead>
                       <tr>
@@ -2780,7 +3120,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      {history.slice(0, 10).map((item) => (
+                      {history.slice(0, showFullHistory ? history.length : 10).map((item) => (
                         <tr key={`${item.number}-${item.date}-${item.time}`}>
                           <td style={{ padding: "7px 10px", borderBottom: `1px solid ${LINE}`, fontFamily: "'IBM Plex Mono', monospace" }}>{item.number}</td>
                           <td style={{ padding: "7px 10px", borderBottom: `1px solid ${LINE}`, whiteSpace: "nowrap" }}>{item.date}</td>
@@ -2807,6 +3147,29 @@
                     </tbody>
                   </table>
                 </div>
+                <div className="history-cards">
+                  {history.slice(0, showFullHistory ? history.length : 10).map((item) => (
+                    <article className="history-card" key={`card-${item.number}-${item.date}-${item.time}`}>
+                      <div>
+                        <div className="history-card-label">Código</div>
+                        <div className="history-card-value history-card-code">{item.code}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div className="history-card-label">Status</div>
+                        <div className="history-card-value" style={{ color: item.status === "ENCONTRADO" ? GREEN : RED, fontWeight: 700 }}>{item.status}</div>
+                      </div>
+                      <div>
+                        <div className="history-card-label">Item</div>
+                        <div className="history-card-value">{displayColumns[0] ? item.rowData?.[displayColumns[0]] || "-" : "-"}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div className="history-card-label">Data e hora</div>
+                        <div className="history-card-value">{item.date} {item.time}</div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                </>
               )}
             </Panel>
 
@@ -2825,12 +3188,7 @@
                 active={true}
               >
 
-                <div
-                  style={{
-                    overflowX:
-                      "auto"
-                  }}
-                >
+                <div className="items-table-wrap">
 
                   <table
                     style={{
@@ -3037,6 +3395,32 @@
             )}
 
           </div>
+
+          {scannerOpen && (
+            <div className="scanner-modal-backdrop" role="dialog" aria-modal="true" aria-label="Leitor de QR Code">
+              <div className="scanner-modal">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 16px", borderBottom: `1px solid var(--border)` }}>
+                  <strong style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Ler QR Code</strong>
+                  <button
+                    type="button"
+                    onClick={() => setScannerOpen(false)}
+                    aria-label="Fechar leitor"
+                    style={{ display: "grid", placeItems: "center", width: 40, minHeight: 40, padding: 0, border: `1px solid var(--border)`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer" }}
+                  >
+                    <Icon name="X" size={19} />
+                  </button>
+                </div>
+                <video ref={scannerVideoRef} className="scanner-video" playsInline muted />
+                <div className="scanner-status">
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)" }} />
+                  {scannerStatus || "Preparando a câmera..."}
+                </div>
+                <div style={{ padding: "0 16px 16px", color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>
+                  A leitura será consultada e registrada automaticamente.
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       );
