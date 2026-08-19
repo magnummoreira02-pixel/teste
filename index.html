@@ -15,6 +15,7 @@
 
   <!-- Biblioteca para leitura de Excel/CSV -->
   <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/qrcode@1.5.4/build/qrcode.min.js"></script>
 
   <style>
     * {
@@ -257,6 +258,48 @@
       font-size: 13px;
     }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(4, 12, 6, 0.7);
+    }
+
+    .app-modal {
+      width: min(100%, 620px);
+      max-height: min(92vh, 820px);
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .label-preview {
+      display: grid;
+      place-items: center;
+      width: min(100%, 420px);
+      min-height: 230px;
+      margin: 16px auto;
+      padding: 18px;
+      border: 1px dashed var(--accent);
+      background: #fff;
+      color: #172117;
+      text-align: center;
+    }
+
+    .label-preview canvas { max-width: 180px; height: auto !important; }
+
+    @media print {
+      body * { visibility: hidden !important; }
+      .print-label, .print-label * { visibility: visible !important; }
+      .print-label { position: absolute; inset: 0; display: grid; place-items: center; }
+    }
+
     @media (min-width: 760px) {
       .app-shell {
         padding: clamp(24px, 4vw, 48px) clamp(20px, 4vw, 56px) !important;
@@ -355,6 +398,7 @@
       .reader-actions { display: grid !important; grid-template-columns: 1fr !important; }
       .reader-actions button { width: 100%; min-height: 48px; }
       .located-code { overflow-wrap: anywhere; }
+      .box-card-actions { display: grid !important; grid-template-columns: 1fr 1fr !important; }
     }
 
     @media (max-width: 380px) {
@@ -553,6 +597,7 @@
     const HISTORY_STORAGE_KEY = "selecao-material-historico-v1";
     const BOXES_STORAGE_KEY = "selecao-material-caixas-v1";
     const MOVEMENTS_STORAGE_KEY = "selecao-material-movimentacoes-v1";
+    const BOX_SEQUENCE_STORAGE_KEY = "selecao-material-caixa-sequencia-v1";
     const BACKUP_VERSION = 1;
 
 
@@ -905,6 +950,30 @@
       const [exportMessage, setExportMessage] =
         useState("");
 
+      const [deleteBoxCandidate, setDeleteBoxCandidate] =
+        useState(null);
+
+      const [labelBox, setLabelBox] =
+        useState(null);
+
+      const [labelBoxes, setLabelBoxes] =
+        useState([]);
+
+      const [labelQuantity, setLabelQuantity] =
+        useState(1);
+
+      const [labelSize, setLabelSize] =
+        useState("100x50");
+
+      const [labelOrientation, setLabelOrientation] =
+        useState("portrait");
+
+      const [labelMargins, setLabelMargins] =
+        useState(5);
+
+      const labelCanvasRef =
+        useRef(null);
+
       const backupInputRef =
         useRef(null);
 
@@ -961,6 +1030,15 @@
       useEffect(() => {
         localStorage.setItem(MOVEMENTS_STORAGE_KEY, JSON.stringify(movements));
       }, [movements]);
+
+      useEffect(() => {
+        if (!labelBox || !labelCanvasRef.current || !window.QRCode) return;
+        window.QRCode.toCanvas(labelCanvasRef.current, `CX${labelBox.number}`, {
+          width: 180,
+          margin: 1,
+          errorCorrectionLevel: "H"
+        }, () => {});
+      }, [labelBox]);
 
       useEffect(() => {
         localStorage.setItem("agro-material-theme", theme);
@@ -1458,7 +1536,9 @@
       const createBox =
         () => {
           const now = new Date();
-          const nextNumber = boxes.reduce((highest, box) => Math.max(highest, Number(box.number) || 0), 0) + 1;
+          const previousSequence = Number(localStorage.getItem(BOX_SEQUENCE_STORAGE_KEY) || 0);
+          const nextNumber = Math.max(previousSequence, ...boxes.map((box) => Number(box.number) || 0)) + 1;
+          localStorage.setItem(BOX_SEQUENCE_STORAGE_KEY, String(nextNumber));
           const box = {
             id: `box-${now.getTime()}`,
             number: String(nextNumber).padStart(3, "0"),
@@ -1472,6 +1552,64 @@
           setActiveBoxId(box.id);
           setNewBoxDescription("");
           setNewBoxNote("");
+        };
+
+      const requestDeleteBox =
+        (box) => setDeleteBoxCandidate(box);
+
+      const confirmDeleteBox =
+        () => {
+          if (!deleteBoxCandidate) return;
+          if (deleteBoxCandidate.materials?.length) return;
+          setBoxes((previous) => previous.filter((box) => box.id !== deleteBoxCandidate.id));
+          setMovements((previous) => [{
+            id: `box-delete-${Date.now()}`,
+            date: new Date().toLocaleDateString("pt-BR"),
+            time: new Date().toLocaleTimeString("pt-BR", { hour12: false }),
+            code: `CX${deleteBoxCandidate.number}`,
+            description: deleteBoxCandidate.description || "",
+            action: "CAIXA EXCLUÍDA",
+            box: deleteBoxCandidate.number,
+            user: ""
+          }, ...previous]);
+          if (activeBoxId === deleteBoxCandidate.id) setActiveBoxId("");
+          setDeleteBoxCandidate(null);
+          setExportMessage(`CAIXA ${deleteBoxCandidate.number} excluída. O histórico foi preservado.`);
+        };
+
+      const openLabelFor =
+        (box) => {
+          setLabelBox(box);
+          setLabelBoxes([box]);
+          setLabelQuantity(1);
+        };
+
+      const openBatchLabels =
+        () => {
+          if (!labelBoxes.length) return;
+          setLabelBox(labelBoxes[0]);
+          setLabelQuantity(1);
+        };
+
+      const printLabels =
+        (boxesToPrint = labelBoxes.length ? labelBoxes : labelBox ? [labelBox] : []) => {
+          if (!boxesToPrint.length) return;
+          const labels = boxesToPrint.flatMap((box) => Array.from({ length: Math.max(1, Number(labelQuantity) || 1) }, () => box));
+          const renderLabel = (box) => new Promise((resolve) => {
+            if (window.QRCode) {
+              window.QRCode.toDataURL(`CX${box.number}`, { width: 260, margin: 1, errorCorrectionLevel: "H" }, (error, url) => resolve({ box, url }));
+              return;
+            }
+            const data = encodeURIComponent(`CX${box.number}`);
+            resolve({ box, url: `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=${data}` });
+          });
+          Promise.all(labels.map(renderLabel)).then((rendered) => {
+            const size = { "100x50": [100, 50], "100x30": [100, 30], "80x50": [80, 50], custom: [100, 50] }[labelSize] || [100, 50];
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) return;
+            printWindow.document.write(`<html><head><title>Etiquetas de caixas</title><style>@page{size:${size[0]}mm ${size[1]}mm ${labelOrientation === "landscape" ? "landscape" : "portrait"};margin:${labelMargins}mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.label{width:${size[0]}mm;height:${size[1]}mm;display:grid;place-items:center;text-align:center;page-break-after:always;padding:${labelMargins}mm}.label img{width:min(38mm,70%);height:auto}.system{font-size:10pt;font-weight:700;letter-spacing:.08em}.title{font-size:14pt;font-weight:700;margin:2mm 0}.code{font-family:monospace;font-size:12pt;font-weight:700;margin-top:1mm}.location{font-size:9pt;margin-top:1mm}</style></head><body>${rendered.map(({ box, url }) => `<main class="label"><div><div class="system">CONTROLE DE ESTOQUE</div><div class="title">CAIXA CX${box.number}</div><img src="${url}" alt="QR CX${box.number}"><div class="code">CX${box.number}</div><div class="location">Local: ${box.description || "Não informado"}</div></div></main>`).join("")}<script>window.onload=()=>window.print()<\/script></body></html>`);
+            printWindow.document.close();
+          });
         };
 
       const finishActiveBox =
@@ -1510,7 +1648,7 @@
       const processQRCode =
         (value) => {
           const code = String(value ?? "").trim();
-          const scannedBox = boxes.find((box) => normalizeValue(`CAIXA-${box.number}`) === normalizeValue(code) || normalizeValue(`CAIXA ${box.number}`) === normalizeValue(code));
+          const scannedBox = boxes.find((box) => normalizeValue(`CX${box.number}`) === normalizeValue(code) || normalizeValue(`CAIXA-${box.number}`) === normalizeValue(code) || normalizeValue(`CAIXA ${box.number}`) === normalizeValue(code));
           if (scannedBox) {
             setActiveBoxId(scannedBox.id);
             setLastProcessedCode(code);
@@ -1938,16 +2076,22 @@
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontWeight: 700 }}><span>CAIXA {box.number}</span><span style={{ color: box.status === "ABERTA" ? AMBER : GREEN, fontSize: 11 }}>{box.status}</span></div>
                       <div className="muted-text" style={{ marginTop: 4, fontSize: 12 }}>{box.description || "Sem descrição"} · {box.materials?.length || 0} materiais</div>
                       <div style={{ marginTop: 5, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "var(--accent)" }}>QR DA CAIXA: CAIXA-{box.number}</div>
-                      <div className="panel-actions" style={{ marginTop: 8 }}>
-                        <button type="button" onClick={() => setActiveBoxId(box.id)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${GREEN}`, borderRadius: 4, background: "transparent", color: GREEN, cursor: "pointer", fontSize: 11 }}>ATIVAR</button>
+                      <div className="box-card-actions panel-actions" style={{ marginTop: 8 }}>
+                        <button type="button" onClick={() => setActiveBoxId(box.id)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${GREEN}`, borderRadius: 4, background: "transparent", color: GREEN, cursor: "pointer", fontSize: 11 }}>📦 ABRIR</button>
+                        <button type="button" onClick={() => openLabelFor(box)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${GREEN}`, borderRadius: 4, background: GREEN_BG, color: GREEN, cursor: "pointer", fontSize: 11 }}>ETIQUETA</button>
+                        <button type="button" onClick={() => printLabels([box])} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>IMPRIMIR</button>
+                        <button type="button" onClick={() => openLabelFor(box)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>🔄 REIMPRIMIR</button>
                         <button type="button" onClick={() => exportBox(box, "xlsx")} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>EXCEL</button>
                         <button type="button" onClick={() => exportBox(box, "csv")} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>CSV</button>
                         <button type="button" onClick={() => exportBox(box, "pdf")} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>PDF</button>
+                        <button type="button" onClick={() => setLabelBoxes((previous) => previous.some((item) => item.id === box.id) ? previous.filter((item) => item.id !== box.id) : [...previous, box])} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${labelBoxes.some((item) => item.id === box.id) ? GREEN : LINE_STRONG}`, borderRadius: 4, background: labelBoxes.some((item) => item.id === box.id) ? GREEN_BG : "transparent", color: labelBoxes.some((item) => item.id === box.id) ? GREEN : "var(--text)", cursor: "pointer", fontSize: 11 }}>{labelBoxes.some((item) => item.id === box.id) ? "LOTE ✓" : "LOTE"}</button>
+                        <button type="button" onClick={() => requestDeleteBox(box)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${RED}`, borderRadius: 4, background: "transparent", color: RED, cursor: "pointer", fontSize: 11 }}>🗑️ EXCLUIR CAIXA</button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
+              {labelBoxes.length > 0 && <button type="button" onClick={openBatchLabels} style={{ marginTop: 12, minHeight: 42, padding: "9px 13px", border: `1px solid ${GREEN}`, borderRadius: 5, background: GREEN, color: "#fff", cursor: "pointer", fontWeight: 700 }}>GERAR ETIQUETAS EM LOTE ({labelBoxes.length})</button>}
               {exportMessage && <div style={{ marginTop: 12, padding: "9px 11px", borderRadius: 5, background: GREEN_BG, color: GREEN, fontSize: 12, fontWeight: 600 }}>{exportMessage}</div>}
             </section>
 
@@ -3788,6 +3932,61 @@
                 </div>
                 <div style={{ padding: "0 16px 16px", color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>
                   A leitura será consultada e registrada automaticamente.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {deleteBoxCandidate && (
+            <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Confirmar exclusão de caixa">
+              <div className="app-modal" style={{ maxWidth: 460 }}>
+                <div style={{ padding: "18px 20px", borderBottom: `1px solid var(--border)` }}>
+                  <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20 }}>Excluir caixa</h2>
+                </div>
+                <div style={{ padding: 20 }}>
+                  <div style={{ padding: 12, borderRadius: 6, background: RED_BG, color: RED, fontWeight: 700 }}>Deseja realmente excluir esta caixa?</div>
+                  <div style={{ display: "grid", gap: 7, marginTop: 15, fontSize: 13 }}>
+                    <div><strong>Caixa:</strong> CX{deleteBoxCandidate.number} {deleteBoxCandidate.description ? `- ${deleteBoxCandidate.description}` : ""}</div>
+                    <div><strong>Materiais:</strong> {deleteBoxCandidate.materials?.length || 0}</div>
+                    <div><strong>Localização:</strong> {deleteBoxCandidate.description || "Não informada"}</div>
+                    <div><strong>Data de criação:</strong> {deleteBoxCandidate.createdAt}</div>
+                  </div>
+                  {deleteBoxCandidate.materials?.length ? (
+                    <div style={{ marginTop: 16, padding: 12, border: `1px solid ${RED}`, borderRadius: 6, color: RED, fontSize: 13 }}><strong>⚠️ CAIXA POSSUI MATERIAIS</strong><br />Esta caixa possui {deleteBoxCandidate.materials.length} materiais armazenados.<br /><br />Transfira os materiais para outra caixa ou remova-os antes de excluir.</div>
+                  ) : (
+                    <div style={{ marginTop: 16, color: RED, fontSize: 13 }}>Essa ação não poderá ser desfeita.</div>
+                  )}
+                  <div className="panel-actions" style={{ marginTop: 20 }}>
+                    <button type="button" onClick={() => setDeleteBoxCandidate(null)} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 700 }}>CANCELAR</button>
+                    <button type="button" onClick={confirmDeleteBox} disabled={Boolean(deleteBoxCandidate.materials?.length)} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${RED}`, borderRadius: 5, background: deleteBoxCandidate.materials?.length ? "transparent" : RED, color: deleteBoxCandidate.materials?.length ? INK_SOFT : "#fff", cursor: deleteBoxCandidate.materials?.length ? "not-allowed" : "pointer", fontWeight: 700 }}>🗑️ EXCLUIR CAIXA</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {labelBox && (
+            <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Gerar etiqueta da caixa">
+              <div className="app-modal">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 18px", borderBottom: `1px solid var(--border)` }}>
+                  <strong style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18 }}>Preview da etiqueta</strong>
+                  <button type="button" onClick={() => setLabelBox(null)} aria-label="Fechar preview" style={{ display: "grid", placeItems: "center", width: 40, minHeight: 40, padding: 0, border: `1px solid var(--border)`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer" }}><Icon name="X" size={19} /></button>
+                </div>
+                <div style={{ padding: 18 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 9 }}>
+                    <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700 }}>Quantidade<input type="number" min="1" max="100" value={labelQuantity} onChange={(event) => setLabelQuantity(Math.max(1, Number(event.target.value) || 1))} style={{ padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }} /></label>
+                    <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700 }}>Tamanho<select value={labelSize} onChange={(event) => setLabelSize(event.target.value)} style={{ padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }}><option value="100x50">100 x 50 mm</option><option value="100x30">100 x 30 mm</option><option value="80x50">80 x 50 mm</option><option value="custom">Personalizado</option></select></label>
+                    <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700 }}>Orientação<select value={labelOrientation} onChange={(event) => setLabelOrientation(event.target.value)} style={{ padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }}><option value="portrait">Retrato</option><option value="landscape">Paisagem</option></select></label>
+                    <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700 }}>Margens (mm)<input type="number" min="0" max="20" value={labelMargins} onChange={(event) => setLabelMargins(Math.max(0, Number(event.target.value) || 0))} style={{ padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }} /></label>
+                  </div>
+                  <div className="label-preview print-label">
+                    <div><div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em" }}>CONTROLE DE ESTOQUE</div><div style={{ margin: "5px 0", fontSize: 20, fontWeight: 700 }}>CAIXA CX{labelBox.number}</div>{window.QRCode ? <canvas ref={labelCanvasRef} /> : <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=6&data=${encodeURIComponent(`CX${labelBox.number}`)}`} alt={`QR CX${labelBox.number}`} style={{ width: 180, height: 180 }} />}<div style={{ marginTop: 5, fontFamily: "monospace", fontSize: 16, fontWeight: 700 }}>CX{labelBox.number}</div><div style={{ marginTop: 4, fontSize: 12 }}>Local: {labelBox.description || "Não informado"}</div></div>
+                  </div>
+                  <div className="panel-actions">
+                    <button type="button" onClick={() => setLabelBox(null)} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 700 }}>VOLTAR</button>
+                    <button type="button" onClick={() => printLabels()} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${GREEN}`, borderRadius: 5, background: GREEN, color: "#fff", cursor: "pointer", fontWeight: 700 }}>📄 GERAR PDF</button>
+                    <button type="button" onClick={() => printLabels()} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${INK}`, borderRadius: 5, background: INK, color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨️ IMPRIMIR ETIQUETA</button>
+                  </div>
                 </div>
               </div>
             </div>
