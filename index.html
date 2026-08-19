@@ -324,6 +324,10 @@
       .history-card-value { overflow-wrap: anywhere; }
       .history-card-code { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
 
+        .inventory-row {
+          grid-template-columns: 1fr 1fr !important;
+        }
+
       .items-table-wrap { overflow-x: visible; }
       .items-table-wrap table { min-width: 0 !important; }
       .items-table-wrap thead { display: none; }
@@ -547,6 +551,9 @@
     const ORANGE = "#C96A16";
     const ORANGE_BG = "#FCE8D2";
     const HISTORY_STORAGE_KEY = "selecao-material-historico-v1";
+    const BOXES_STORAGE_KEY = "selecao-material-caixas-v1";
+    const MOVEMENTS_STORAGE_KEY = "selecao-material-movimentacoes-v1";
+    const BACKUP_VERSION = 1;
 
 
     /* =========================================================
@@ -874,6 +881,33 @@
       const [showFullHistory, setShowFullHistory] =
         useState(false);
 
+      const [boxes, setBoxes] =
+        useState(() => JSON.parse(localStorage.getItem(BOXES_STORAGE_KEY) || "[]"));
+
+      const [movements, setMovements] =
+        useState(() => JSON.parse(localStorage.getItem(MOVEMENTS_STORAGE_KEY) || "[]"));
+
+      const [activeBoxId, setActiveBoxId] =
+        useState("");
+
+      const [newBoxDescription, setNewBoxDescription] =
+        useState("");
+
+      const [newBoxNote, setNewBoxNote] =
+        useState("");
+
+      const [inventoryQuery, setInventoryQuery] =
+        useState("");
+
+      const [showInventory, setShowInventory] =
+        useState(false);
+
+      const [exportMessage, setExportMessage] =
+        useState("");
+
+      const backupInputRef =
+        useRef(null);
+
       const [lastProcessedCode, setLastProcessedCode] =
         useState("");
 
@@ -919,6 +953,14 @@
       useEffect(() => {
         loadHistory();
       }, []);
+
+      useEffect(() => {
+        localStorage.setItem(BOXES_STORAGE_KEY, JSON.stringify(boxes));
+      }, [boxes]);
+
+      useEffect(() => {
+        localStorage.setItem(MOVEMENTS_STORAGE_KEY, JSON.stringify(movements));
+      }, [movements]);
 
       useEffect(() => {
         localStorage.setItem("agro-material-theme", theme);
@@ -1062,6 +1104,24 @@
         history.filter((item) => item.status === "NÃO ENCONTRADO").length;
 
       const latestReading = history[0];
+
+      const activeBox =
+        boxes.find((box) => box.id === activeBoxId) || null;
+
+      const inventoryRecords =
+        history.map((item) => ({
+          ...item,
+          description: displayColumns[0] ? item.rowData?.[displayColumns[0]] || "" : "",
+          box: boxes.find((box) => box.materials?.some((material) => normalizeValue(material.code) === normalizeValue(item.code))) || null
+        }));
+
+      const filteredInventory =
+        inventoryRecords.filter((item) => {
+          const term = normalizeValue(inventoryQuery);
+          if (!term) return true;
+          return [item.code, item.description, item.box?.number, item.date, item.status]
+            .some((value) => normalizeValue(value).includes(term));
+        });
 
 
       /* =====================================================
@@ -1379,9 +1439,86 @@
           });
         };
 
+      const addMovement =
+        (action, code, exact, boxNumber = "") => {
+          const now = new Date();
+          const movement = {
+            id: `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+            date: now.toLocaleDateString("pt-BR"),
+            time: now.toLocaleTimeString("pt-BR", { hour12: false }),
+            code,
+            description: exact && displayColumns[0] ? exact[displayColumns[0]] || "" : "",
+            action,
+            box: boxNumber,
+            user: ""
+          };
+          setMovements((previous) => [movement, ...previous]);
+        };
+
+      const createBox =
+        () => {
+          const now = new Date();
+          const nextNumber = boxes.reduce((highest, box) => Math.max(highest, Number(box.number) || 0), 0) + 1;
+          const box = {
+            id: `box-${now.getTime()}`,
+            number: String(nextNumber).padStart(3, "0"),
+            description: newBoxDescription.trim(),
+            note: newBoxNote.trim(),
+            createdAt: now.toLocaleDateString("pt-BR"),
+            status: "ABERTA",
+            materials: []
+          };
+          setBoxes((previous) => [box, ...previous]);
+          setActiveBoxId(box.id);
+          setNewBoxDescription("");
+          setNewBoxNote("");
+        };
+
+      const finishActiveBox =
+        () => {
+          if (!activeBox) return;
+          setBoxes((previous) => previous.map((box) => box.id === activeBox.id ? { ...box, status: "ARMAZENADA" } : box));
+          addMovement("CAIXA FINALIZADA", "", null, activeBox.number);
+          setActiveBoxId("");
+        };
+
+      const updateBoxForMaterial =
+        (code, exact, date, time) => {
+          if (!activeBox) return;
+          const existingBox = boxes.find((box) => box.materials?.some((material) => normalizeValue(material.code) === normalizeValue(code)));
+          if (existingBox && existingBox.id !== activeBox.id) {
+            const shouldTransfer = window.confirm(`Este material já está armazenado na CAIXA ${existingBox.number}.\n\nOK: transferir para ${activeBox.number}\nCancelar: manter na caixa atual`);
+            if (!shouldTransfer) return;
+            setBoxes((previous) => previous.map((box) => {
+              if (box.id === existingBox.id) return { ...box, materials: box.materials.filter((material) => normalizeValue(material.code) !== normalizeValue(code)) };
+              if (box.id === activeBox.id) return { ...box, materials: [...(box.materials || []), { code, description: exact && displayColumns[0] ? exact[displayColumns[0]] || "" : "", date, time }] };
+              return box;
+            }));
+            addMovement("TRANSFERIDO", code, exact, activeBox.number);
+            return;
+          }
+          if (existingBox && existingBox.id === activeBox.id) {
+            if (!window.confirm("ATENÇÃO: este material já foi registrado nesta caixa.\n\nAdicionar novamente?")) return;
+          }
+          setBoxes((previous) => previous.map((box) => box.id === activeBox.id ? {
+            ...box,
+            materials: [...(box.materials || []), { code, description: exact && displayColumns[0] ? exact[displayColumns[0]] || "" : "", date, time }]
+          } : box));
+          addMovement(existingBox ? "BIPADO NOVAMENTE" : "BIPADO", code, exact, activeBox.number);
+        };
+
       const processQRCode =
         (value) => {
           const code = String(value ?? "").trim();
+          const scannedBox = boxes.find((box) => normalizeValue(`CAIXA-${box.number}`) === normalizeValue(code) || normalizeValue(`CAIXA ${box.number}`) === normalizeValue(code));
+          if (scannedBox) {
+            setActiveBoxId(scannedBox.id);
+            setLastProcessedCode(code);
+            setSearchState("found");
+            setExportMessage(`CAIXA ${scannedBox.number} ATIVA`);
+            if (navigator.vibrate) navigator.vibrate(100);
+            return;
+          }
           if (!code || !readyToSearch) {
             if (searchInputRef.current) searchInputRef.current.focus();
             return;
@@ -1404,6 +1541,7 @@
             setSearchState("notfound");
           }
           addToHistory(code, exact, date, time);
+          updateBoxForMaterial(code, exact, date, time);
 
           requestAnimationFrame(() => {
             if (searchInputRef.current) searchInputRef.current.focus();
@@ -1440,6 +1578,129 @@
           const workbook = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(workbook, worksheet, "Leituras");
           XLSX.writeFile(workbook, "Historico_Leituras.xlsx");
+        };
+
+      const getExportRows =
+        () => history.slice().reverse().map((item) => ({
+          Codigo: item.code,
+          Descricao: displayColumns[0] ? item.rowData?.[displayColumns[0]] || "" : "",
+          Data: item.date,
+          Hora: item.time,
+          Usuario: item.user || "",
+          Status: item.status,
+          Caixa: boxes.find((box) => box.materials?.some((material) => normalizeValue(material.code) === normalizeValue(item.code)))?.number || ""
+        }));
+
+      const getExportFileName =
+        (extension, prefix = "Historico_Bipagens") => {
+          const now = new Date();
+          const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}`;
+          return `${prefix}_${stamp}.${extension}`;
+        };
+
+      const downloadBlob =
+        (blob, fileName) => {
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = fileName;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        };
+
+      const saveLocalHistory =
+        async (format = "xlsx") => {
+          if (!history.length) {
+            setExportMessage("Não há bipagens para exportar.");
+            return;
+          }
+          const fileName = getExportFileName(format);
+          const rowsToExport = getExportRows();
+          let blob;
+          if (format === "csv") {
+            const worksheet = XLSX.utils.json_to_sheet(rowsToExport);
+            const csv = XLSX.utils.sheet_to_csv(worksheet);
+            blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
+          } else {
+            const worksheet = XLSX.utils.json_to_sheet(rowsToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Bipagens");
+            blob = new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+          }
+          try {
+            if (window.showDirectoryPicker) {
+              const directory = await window.showDirectoryPicker({ mode: "readwrite" });
+              const root = await directory.getDirectoryHandle("Controle de Estoque", { create: true });
+              const historyDirectory = await root.getDirectoryHandle("Historico", { create: true });
+              const fileHandle = await historyDirectory.getFileHandle(fileName, { create: true });
+              const writable = await fileHandle.createWritable();
+              await writable.write(blob);
+              await writable.close();
+              setExportMessage("Histórico salvo com sucesso em: Controle de Estoque > Historico");
+              return;
+            }
+          } catch (error) {
+            if (error?.name === "AbortError") return;
+          }
+          downloadBlob(blob, fileName);
+          setExportMessage(`Download criado: ${fileName}`);
+        };
+
+      const exportFullBackup =
+        () => {
+          const payload = { version: BACKUP_VERSION, exportedAt: new Date().toISOString(), history, boxes, movements, rows, headers, selectedSheets, idColumn, displayColumns };
+          downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }), getExportFileName("json", "Backup_Controle_Estoque"));
+          setExportMessage("Backup completo exportado com sucesso.");
+        };
+
+      const restoreBackup =
+        (event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const payload = JSON.parse(reader.result);
+              if (payload.version !== BACKUP_VERSION || !Array.isArray(payload.history) || !Array.isArray(payload.boxes)) throw new Error("Formato inválido");
+              if (!window.confirm("Restaurar o backup substituirá os dados locais atuais. Continuar?")) return;
+              setHistory(payload.history);
+              setBoxes(payload.boxes);
+              setMovements(Array.isArray(payload.movements) ? payload.movements : []);
+              setRows(Array.isArray(payload.rows) ? payload.rows : []);
+              setHeaders(Array.isArray(payload.headers) ? payload.headers : []);
+              setSelectedSheets(Array.isArray(payload.selectedSheets) ? payload.selectedSheets : []);
+              setIdColumn(payload.idColumn || "");
+              setDisplayColumns(Array.isArray(payload.displayColumns) ? payload.displayColumns : []);
+              localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(payload.history));
+              localStorage.setItem(BOXES_STORAGE_KEY, JSON.stringify(payload.boxes));
+              localStorage.setItem(MOVEMENTS_STORAGE_KEY, JSON.stringify(Array.isArray(payload.movements) ? payload.movements : []));
+              setExportMessage("Backup restaurado com sucesso.");
+            } catch (error) {
+              setExportMessage("Não foi possível restaurar este backup.");
+            }
+          };
+          reader.readAsText(file);
+          event.target.value = "";
+        };
+
+      const exportBox =
+        (box, format) => {
+          if (!box) return;
+          const rowsToExport = (box.materials || []).map((material) => ({ Codigo: material.code, Descricao: material.description, Data: material.date, Hora: material.time, Caixa: box.number, Status: box.status }));
+          if (format === "pdf") {
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) return;
+            printWindow.document.write(`<html><head><title>Caixa ${box.number}</title></head><body><h1>CAIXA ${box.number}</h1><p>${box.description || ""}</p><p>${rowsToExport.length} materiais</p><pre>${rowsToExport.map((item) => `${item.Codigo} - ${item.Descricao}`).join("\\n")}</pre><script>window.print()<\\/script></body></html>`);
+            printWindow.document.close();
+            return;
+          }
+          const worksheet = XLSX.utils.json_to_sheet(rowsToExport);
+          if (format === "csv") {
+            downloadBlob(new Blob(["\ufeff", XLSX.utils.sheet_to_csv(worksheet)], { type: "text/csv;charset=utf-8" }), getExportFileName("csv", `Caixa_${box.number}`));
+            return;
+          }
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, `Caixa ${box.number}`);
+          XLSX.writeFile(workbook, getExportFileName("xlsx", `Caixa_${box.number}`).replace(/:/g, "-"));
         };
 
       const searchExactCodeAutomatically =
@@ -1558,10 +1819,12 @@
 
           <div className="metric-grid">
             {[
-              ["Total de leituras", history.length, "var(--accent)"],
-              ["Encontrados", foundMaterialsCount, "var(--accent)"],
-              ["Não encontrados", notFoundMaterialsCount, RED],
-              ["Última leitura", latestReading?.time || "--:--:--", "var(--muted)"]
+              ["Total de materiais", rows.length || history.length, "var(--accent)"],
+              ["Bipados hoje", history.filter((item) => item.date === new Date().toLocaleDateString("pt-BR")).length, "var(--accent)"],
+              ["Total de caixas", boxes.length, "var(--accent)"],
+              ["Caixas em aberto", boxes.filter((box) => box.status === "ABERTA").length, AMBER],
+              ["Sem caixa", history.filter((item) => !boxes.some((box) => box.materials?.some((material) => normalizeValue(material.code) === normalizeValue(item.code)))).length, RED],
+              ["Última bipagem", latestReading?.time || "--:--:--", "var(--muted)"],
             ].map(([label, value, color]) => (
               <div className="metric-card" key={label} style={{ borderLeftColor: color }}>
                 <div className="muted-text" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
@@ -1642,6 +1905,91 @@
               </p>
 
             </div>
+
+            <section className="panel-surface" style={{ marginBottom: 20, padding: 18, border: `1px solid ${LINE}`, borderRadius: 8 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ color: "var(--accent)", fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Organizar em Caixas</div>
+                  <h2 style={{ marginTop: 4, fontFamily: "'Space Grotesk', sans-serif", fontSize: 20 }}>Controle físico do estoque</h2>
+                  {activeBox ? (
+                    <div style={{ marginTop: 9, color: "var(--accent)", fontWeight: 700 }}>CAIXA ATIVA: CAIXA {activeBox.number} · {activeBox.materials?.length || 0} materiais armazenados</div>
+                  ) : (
+                    <div className="muted-text" style={{ marginTop: 9 }}>Modo de bipagem normal. Selecione uma caixa para associar os próximos materiais.</div>
+                  )}
+                </div>
+                <div className="panel-actions">
+                  <button type="button" onClick={createBox} style={{ minHeight: 42, padding: "9px 13px", border: "none", borderRadius: 5, background: "var(--accent-dark)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>+ NOVA CAIXA</button>
+                  <button type="button" onClick={finishActiveBox} disabled={!activeBox} style={{ minHeight: 42, padding: "9px 13px", border: `1px solid ${activeBox ? GREEN : LINE_STRONG}`, borderRadius: 5, background: "transparent", color: activeBox ? GREEN : INK_SOFT, cursor: activeBox ? "pointer" : "not-allowed", fontWeight: 700 }}>FINALIZAR CAIXA</button>
+                  <button type="button" onClick={() => setShowInventory((current) => !current)} style={{ minHeight: 42, padding: "9px 13px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 700 }}>CONSULTAR ESTOQUE</button>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) auto", gap: 8, marginTop: 14 }}>
+                <input value={newBoxDescription} onChange={(event) => setNewBoxDescription(event.target.value)} placeholder="Descrição da nova caixa" style={{ minWidth: 0, padding: "10px 11px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }} />
+                <input value={newBoxNote} onChange={(event) => setNewBoxNote(event.target.value)} placeholder="Observação opcional" style={{ minWidth: 0, padding: "10px 11px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }} />
+                <select value={activeBoxId} onChange={(event) => setActiveBoxId(event.target.value)} style={{ minWidth: 150, padding: "10px 11px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }}>
+                  <option value="">BIPAGEM NORMAL</option>
+                  {boxes.map((box) => <option key={box.id} value={box.id}>CAIXA {box.number} · {box.status}</option>)}
+                </select>
+              </div>
+              {boxes.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 9, marginTop: 14 }}>
+                  {boxes.map((box) => (
+                    <div key={box.id} style={{ padding: 11, border: `1px solid ${box.id === activeBoxId ? GREEN : LINE}`, borderRadius: 6, background: box.id === activeBoxId ? GREEN_BG : "var(--surface-soft)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontWeight: 700 }}><span>CAIXA {box.number}</span><span style={{ color: box.status === "ABERTA" ? AMBER : GREEN, fontSize: 11 }}>{box.status}</span></div>
+                      <div className="muted-text" style={{ marginTop: 4, fontSize: 12 }}>{box.description || "Sem descrição"} · {box.materials?.length || 0} materiais</div>
+                      <div style={{ marginTop: 5, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "var(--accent)" }}>QR DA CAIXA: CAIXA-{box.number}</div>
+                      <div className="panel-actions" style={{ marginTop: 8 }}>
+                        <button type="button" onClick={() => setActiveBoxId(box.id)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${GREEN}`, borderRadius: 4, background: "transparent", color: GREEN, cursor: "pointer", fontSize: 11 }}>ATIVAR</button>
+                        <button type="button" onClick={() => exportBox(box, "xlsx")} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>EXCEL</button>
+                        <button type="button" onClick={() => exportBox(box, "csv")} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>CSV</button>
+                        <button type="button" onClick={() => exportBox(box, "pdf")} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>PDF</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {exportMessage && <div style={{ marginTop: 12, padding: "9px 11px", borderRadius: 5, background: GREEN_BG, color: GREEN, fontSize: 12, fontWeight: 600 }}>{exportMessage}</div>}
+            </section>
+
+            {showInventory && (
+              <section className="panel-surface" style={{ marginBottom: 20, padding: 18, border: `1px solid ${LINE}`, borderRadius: 8 }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+                  <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18 }}>Consultar Estoque</h2>
+                  <input value={inventoryQuery} onChange={(event) => setInventoryQuery(event.target.value)} placeholder="Código, descrição, caixa, data ou status" style={{ flex: "1 1 280px", minWidth: 0, padding: "10px 11px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }} />
+                </div>
+                  <div style={{ marginTop: 12, display: "grid", gap: 7 }}>
+                  {filteredInventory.slice(0, 50).map((item) => (
+                    <div className="inventory-row" key={`${item.number}-${item.code}`} style={{ display: "grid", gridTemplateColumns: "minmax(100px, 1fr) minmax(0, 1.6fr) minmax(90px, .7fr) minmax(100px, .8fr)", gap: 10, padding: "9px 0", borderBottom: `1px solid ${LINE}`, fontSize: 12 }}>
+                      <strong style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{item.code}</strong><span>{item.description || "-"}</span><span>{item.box ? `CAIXA ${item.box.number}` : "Sem caixa"}</span><span>{item.date} · {item.status}</span>
+                    </div>
+                  ))}
+                  {!filteredInventory.length && <div className="muted-text" style={{ fontSize: 13 }}>Nenhum material encontrado.</div>}
+                </div>
+              </section>
+            )}
+
+            <section className="panel-surface" style={{ marginBottom: 20, padding: 18, border: `1px solid ${LINE}`, borderRadius: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ color: "var(--accent)", fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Relatório final</div>
+                  <h2 style={{ marginTop: 4, fontFamily: "'Space Grotesk', sans-serif", fontSize: 18 }}>Mapa Físico do Estoque</h2>
+                </div>
+                <span className="muted-text" style={{ fontSize: 12 }}>{boxes.length} caixas · {boxes.reduce((total, box) => total + (box.materials?.length || 0), 0)} materiais armazenados</span>
+              </div>
+              <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+                {boxes.map((box) => (
+                  <details key={`map-${box.id}`} style={{ border: `1px solid ${LINE}`, borderRadius: 5, padding: "9px 11px" }}>
+                    <summary style={{ cursor: "pointer", fontWeight: 700 }}>CAIXA {box.number} · {box.materials?.length || 0} materiais · {box.status}</summary>
+                    <div className="muted-text" style={{ marginTop: 8, fontSize: 12 }}>{box.description || "Sem descrição"} · criada em {box.createdAt}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 9 }}>
+                      {(box.materials || []).map((material) => <span key={`${box.id}-${material.code}-${material.time}`} style={{ padding: "5px 7px", borderRadius: 4, background: GREEN_BG, color: GREEN, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>{material.code}</span>)}
+                      {!box.materials?.length && <span className="muted-text" style={{ fontSize: 12 }}>Nenhum material associado.</span>}
+                    </div>
+                  </details>
+                ))}
+                {!boxes.length && <div className="muted-text" style={{ fontSize: 13 }}>Crie uma caixa para começar o mapa físico.</div>}
+              </div>
+            </section>
 
 
             {/* =================================================
@@ -3021,7 +3369,7 @@
 
             <Panel
               step={4}
-              title="Histórico de leituras"
+              title="Histórico / Backup Local"
               active={true}
               trailing={
                 <div className="panel-actions">
@@ -3075,6 +3423,12 @@
                   >
                     Limpar histórico
                   </button>
+                  <button type="button" onClick={() => saveLocalHistory("xlsx")} disabled={!history.length} style={{ border: `1px solid ${history.length ? GREEN : LINE_STRONG}`, borderRadius: 4, padding: "6px 10px", background: history.length ? GREEN : "transparent", color: history.length ? "#fff" : INK_SOFT, cursor: history.length ? "pointer" : "not-allowed", fontSize: 12 }}>SALVAR HISTÓRICO EXCEL</button>
+                  <button type="button" onClick={() => saveLocalHistory("xlsx")} disabled={!history.length} style={{ border: `1px solid ${history.length ? GREEN : LINE_STRONG}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: history.length ? GREEN : INK_SOFT, cursor: history.length ? "pointer" : "not-allowed", fontSize: 12 }}>EXPORTAR AGORA EXCEL</button>
+                  <button type="button" onClick={() => saveLocalHistory("csv")} disabled={!history.length} style={{ border: `1px solid ${history.length ? GREEN : LINE_STRONG}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: history.length ? GREEN : INK_SOFT, cursor: history.length ? "pointer" : "not-allowed", fontSize: 12 }}>EXPORTAR CSV</button>
+                  <button type="button" onClick={exportFullBackup} style={{ border: `1px solid ${INK}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 12 }}>BACKUP COMPLETO</button>
+                  <button type="button" onClick={() => backupInputRef.current?.click()} style={{ border: `1px solid ${INK}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 12 }}>RESTAURAR BACKUP</button>
+                  <input ref={backupInputRef} type="file" accept="application/json,.json" onChange={restoreBackup} style={{ display: "none" }} />
                   <button
                     onClick={() => setShowFullHistory((current) => !current)}
                     disabled={history.length <= 10}
@@ -3170,6 +3524,23 @@
                   ))}
                 </div>
                 </>
+              )}
+            </Panel>
+
+            <Panel step={6} title="Histórico de movimentações" active={movements.length > 0}>
+              {!movements.length ? (
+                <div className="muted-text" style={{ fontSize: 13 }}>As movimentações de caixas aparecerão aqui.</div>
+              ) : (
+                <div className="history-cards" style={{ display: "grid" }}>
+                  {movements.slice(0, showFullHistory ? movements.length : 10).map((movement) => (
+                    <div className="history-card" key={movement.id}>
+                      <div><div className="history-card-label">Data e hora</div><div className="history-card-value">{movement.date} {movement.time}</div></div>
+                      <div style={{ textAlign: "right" }}><div className="history-card-label">Ação</div><div className="history-card-value" style={{ fontWeight: 700 }}>{movement.action}</div></div>
+                      <div><div className="history-card-label">Código</div><div className="history-card-value history-card-code">{movement.code || "-"}</div></div>
+                      <div style={{ textAlign: "right" }}><div className="history-card-label">Caixa</div><div className="history-card-value">{movement.box ? `CAIXA ${movement.box}` : "-"}</div></div>
+                    </div>
+                  ))}
+                </div>
               )}
             </Panel>
 
