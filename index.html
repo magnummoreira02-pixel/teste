@@ -598,15 +598,6 @@
     const BOXES_STORAGE_KEY = "selecao-material-caixas-v1";
     const MOVEMENTS_STORAGE_KEY = "selecao-material-movimentacoes-v1";
     const BOX_SEQUENCE_STORAGE_KEY = "selecao-material-caixa-sequencia-v1";
-    const LABEL_LAYOUT_STORAGE_KEY = "selecao-material-layouts-v1";
-    const LABEL_PRINTER_STORAGE_KEY = "selecao-material-printer-v1";
-    const DPI_OPTIONS = [203, 300, 600];
-    const PRINTER_PRESETS = {
-      "Zebra ZD220": { dpi: 203, maxWidth: 104, media: "Gap", sensor: "Gap", speed: 4 },
-      "Zebra ZT410": { dpi: 203, maxWidth: 104, media: "Gap", sensor: "Gap", speed: 6 },
-      "Zebra ZT411": { dpi: 300, maxWidth: 104, media: "Gap", sensor: "Gap", speed: 6 },
-      "Outra impressora": { dpi: 203, maxWidth: 104, media: "Gap", sensor: "Gap", speed: 4 }
-    };
     const BACKUP_VERSION = 1;
 
 
@@ -962,61 +953,6 @@
       const [deleteBoxCandidate, setDeleteBoxCandidate] =
         useState(null);
 
-      const [labelBox, setLabelBox] =
-        useState(null);
-
-      const [labelBoxes, setLabelBoxes] =
-        useState([]);
-
-      const [labelQuantity, setLabelQuantity] =
-        useState(1);
-
-      const [labelSize, setLabelSize] =
-        useState("100x50");
-
-      const [labelOrientation, setLabelOrientation] =
-        useState("portrait");
-
-      const [labelMargins, setLabelMargins] =
-        useState(5);
-
-      const [layoutEditorOpen, setLayoutEditorOpen] =
-        useState(false);
-
-      const [labelLayouts, setLabelLayouts] =
-        useState(() => JSON.parse(localStorage.getItem(LABEL_LAYOUT_STORAGE_KEY) || "[]"));
-
-      const [selectedLayoutId, setSelectedLayoutId] =
-        useState("");
-
-      const [printerProfile, setPrinterProfile] =
-        useState(() => JSON.parse(localStorage.getItem(LABEL_PRINTER_STORAGE_KEY) || JSON.stringify({ model: "Zebra ZD220", ...PRINTER_PRESETS["Zebra ZD220"], media: "Gap" })));
-
-      const [layoutName, setLayoutName] =
-        useState("Etiqueta Caixa 100x50");
-
-      const [layoutConfig, setLayoutConfig] =
-        useState({ width: 100, height: 50, gap: 2, margins: { left: 3, right: 3, top: 3, bottom: 3 }, orientation: "portrait", scaleElements: false });
-
-      const [layoutElements, setLayoutElements] =
-        useState([
-          { id: "title", type: "text", label: "CONTROLE DE ESTOQUE", value: "CONTROLE DE ESTOQUE", x: 5, y: 4, width: 90, height: 5, fontSize: 3.2, bold: true, align: "center", rotation: 0, locked: false },
-          { id: "box", type: "text", label: "CAIXA", value: "CAIXA {caixa}", x: 5, y: 11, width: 90, height: 7, fontSize: 5, bold: true, align: "center", rotation: 0, locked: false },
-          { id: "qr", type: "qr", label: "QR Code", value: "{caixa}", x: 38, y: 20, width: 24, height: 24, fontSize: 0, bold: false, align: "center", rotation: 0, locked: false }
-        ]);
-
-      const [selectedElementId, setSelectedElementId] =
-        useState("title");
-
-      const [layoutAlert, setLayoutAlert] =
-        useState("");
-
-      const [draggedElementId, setDraggedElementId] =
-        useState("");
-
-      const labelCanvasRef =
-        useRef(null);
-
       const backupInputRef =
         useRef(null);
 
@@ -1073,23 +1009,6 @@
       useEffect(() => {
         localStorage.setItem(MOVEMENTS_STORAGE_KEY, JSON.stringify(movements));
       }, [movements]);
-
-      useEffect(() => {
-        localStorage.setItem(LABEL_LAYOUT_STORAGE_KEY, JSON.stringify(labelLayouts));
-      }, [labelLayouts]);
-
-      useEffect(() => {
-        localStorage.setItem(LABEL_PRINTER_STORAGE_KEY, JSON.stringify(printerProfile));
-      }, [printerProfile]);
-
-      useEffect(() => {
-        if (!labelBox || !labelCanvasRef.current || !window.QRCode) return;
-        window.QRCode.toCanvas(labelCanvasRef.current, `CX${labelBox.number}`, {
-          width: 180,
-          margin: 1,
-          errorCorrectionLevel: "H"
-        }, () => {});
-      }, [labelBox]);
 
       useEffect(() => {
         localStorage.setItem("agro-material-theme", theme);
@@ -1584,125 +1503,6 @@
           setMovements((previous) => [movement, ...previous]);
         };
 
-      const mmToDots =
-        (value) => Math.round(Number(value || 0) * Number(printerProfile.dpi || 203) / 25.4);
-
-      const getLayoutBounds =
-        (element) => ({
-          right: Number(element.x || 0) + Number(element.width || 0),
-          bottom: Number(element.y || 0) + Number(element.height || 0)
-        });
-
-      const getUnsafeElements =
-        (elements = layoutElements) => elements.filter((element) => {
-          const bounds = getLayoutBounds(element);
-          return bounds.right > layoutConfig.width - layoutConfig.margins.right || bounds.bottom > layoutConfig.height - layoutConfig.margins.bottom || element.x < layoutConfig.margins.left || element.y < layoutConfig.margins.top;
-        });
-
-      const updateLayoutElement =
-        (id, changes) => setLayoutElements((previous) => previous.map((element) => element.id === id ? { ...element, ...changes } : element));
-
-      const addLayoutElement =
-        (type) => {
-          const id = `${type}-${Date.now()}`;
-          const element = { id, type, label: type === "qr" ? "QR Code" : type === "barcode" ? "Código de barras" : type === "line" ? "Linha" : type === "rect" ? "Retângulo" : "Texto", value: type === "qr" ? "{caixa}" : type === "barcode" ? "{caixa}" : type === "line" ? "" : type === "rect" ? "" : "Texto fixo", x: 5, y: Math.max(5, layoutConfig.height - 12), width: type === "line" || type === "rect" ? 50 : 90, height: type === "line" ? 1 : type === "qr" || type === "barcode" ? 18 : 6, fontSize: 3, bold: false, align: "left", rotation: 0, locked: false };
-          setLayoutElements((previous) => [...previous, element]);
-          setSelectedElementId(id);
-        };
-
-      const duplicateLayoutElement =
-        () => {
-          const source = layoutElements.find((element) => element.id === selectedElementId);
-          if (!source) return;
-          const id = `${source.type}-${Date.now()}`;
-          setLayoutElements((previous) => [...previous, { ...source, id, x: Math.min(source.x + 3, layoutConfig.width - source.width), y: Math.min(source.y + 3, layoutConfig.height - source.height) }]);
-          setSelectedElementId(id);
-        };
-
-      const removeLayoutElement =
-        () => {
-          setLayoutElements((previous) => previous.filter((element) => element.id !== selectedElementId));
-          setSelectedElementId("");
-        };
-
-      const fitLayoutToLabel =
-        () => {
-          const unsafe = getUnsafeElements();
-          if (!unsafe.length) {
-            setLayoutAlert("Todos os elementos já estão dentro da área segura.");
-            return;
-          }
-          setLayoutElements((previous) => previous.map((element) => ({ ...element, x: Math.max(layoutConfig.margins.left, Math.min(element.x, layoutConfig.width - layoutConfig.margins.right - element.width)), y: Math.max(layoutConfig.margins.top, Math.min(element.y, layoutConfig.height - layoutConfig.margins.bottom - element.height)) })));
-          setLayoutAlert("Elementos reposicionados dentro da área segura.");
-        };
-
-      const saveLayoutProfile =
-        () => {
-          const profile = { id: selectedLayoutId || `layout-${Date.now()}`, name: layoutName || "Layout sem nome", config: layoutConfig, elements: layoutElements, updatedAt: new Date().toISOString() };
-          setLabelLayouts((previous) => [...previous.filter((item) => item.id !== profile.id), profile]);
-          setSelectedLayoutId(profile.id);
-          setLabelSize("custom");
-          setLayoutAlert("Layout salvo com sucesso.");
-        };
-
-      const loadLayoutProfile =
-        (id) => {
-          const profile = labelLayouts.find((item) => item.id === id);
-          if (!profile) return;
-          setSelectedLayoutId(profile.id);
-          setLayoutName(profile.name);
-          setLayoutConfig(profile.config);
-          setLayoutElements(profile.elements);
-          setLayoutAlert("Layout carregado.");
-        };
-
-      const exportLayoutProfile =
-        () => downloadBlob(new Blob([JSON.stringify({ version: 1, name: layoutName, config: layoutConfig, elements: layoutElements }, null, 2)], { type: "application/json" }), `${(layoutName || "layout").replace(/[^a-z0-9]+/gi, "_")}.layout.json`);
-
-      const importLayoutProfile =
-        (event) => {
-          const file = event.target.files?.[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => {
-            try {
-              const profile = JSON.parse(reader.result);
-              if (!profile.config || !Array.isArray(profile.elements)) throw new Error("Formato inválido");
-              setLayoutName(profile.name || "Layout importado");
-              setLayoutConfig(profile.config);
-              setLayoutElements(profile.elements);
-              setLayoutAlert("Layout importado com sucesso.");
-            } catch (error) {
-              setLayoutAlert("Não foi possível importar este layout.");
-            }
-          };
-          reader.readAsText(file);
-          event.target.value = "";
-        };
-
-      const generateZpl =
-        () => {
-          const widthDots = mmToDots(layoutConfig.width);
-          const heightDots = mmToDots(layoutConfig.height);
-          const commands = layoutElements.map((element) => {
-            const x = mmToDots(element.x);
-            const y = mmToDots(element.y);
-            if (element.type === "qr") return `^FO${x},${y}^BQN,2,${Math.max(2, Math.round(element.width / 5))}^FDLA,CX001^FS`;
-            if (element.type === "barcode") return `^FO${x},${y}^BY2^BCN,${mmToDots(element.height)},Y,N,N^FDCX001^FS`;
-            if (element.type === "line") return `^FO${x},${y}^GB${mmToDots(element.width)},${Math.max(1, mmToDots(element.height))},${Math.max(1, mmToDots(element.height))}^FS`;
-            if (element.type === "rect") return `^FO${x},${y}^GB${mmToDots(element.width)},${mmToDots(element.height)},${Math.max(1, mmToDots(element.height / 10))}^FS`;
-            return `^FO${x},${y}^A0${element.rotation || 0},${mmToDots(element.fontSize || 3)},${mmToDots(element.fontSize || 3)}^FD${String(element.value || "").replace(/\^/g, "")}^FS`;
-          });
-          return `^XA^PW${widthDots}^LL${heightDots}\n${commands.join("\n")}\n^XZ`;
-        };
-
-      const printTestLabel =
-        () => {
-          setLabelBox({ number: "TESTE", description: `${printerProfile.model} · ${printerProfile.dpi} DPI` });
-          setLabelBoxes([]);
-          setLabelQuantity(1);
-        };
-
       const createBox =
         () => {
           const now = new Date();
@@ -1745,41 +1545,6 @@
           if (activeBoxId === deleteBoxCandidate.id) setActiveBoxId("");
           setDeleteBoxCandidate(null);
           setExportMessage(`CAIXA ${deleteBoxCandidate.number} excluída. O histórico foi preservado.`);
-        };
-
-      const openLabelFor =
-        (box) => {
-          setLabelBox(box);
-          setLabelBoxes([box]);
-          setLabelQuantity(1);
-        };
-
-      const openBatchLabels =
-        () => {
-          if (!labelBoxes.length) return;
-          setLabelBox(labelBoxes[0]);
-          setLabelQuantity(1);
-        };
-
-      const printLabels =
-        (boxesToPrint = labelBoxes.length ? labelBoxes : labelBox ? [labelBox] : []) => {
-          if (!boxesToPrint.length) return;
-          const labels = boxesToPrint.flatMap((box) => Array.from({ length: Math.max(1, Number(labelQuantity) || 1) }, () => box));
-          const renderLabel = (box) => new Promise((resolve) => {
-            if (window.QRCode) {
-              window.QRCode.toDataURL(`CX${box.number}`, { width: 260, margin: 1, errorCorrectionLevel: "H" }, (error, url) => resolve({ box, url }));
-              return;
-            }
-            const data = encodeURIComponent(`CX${box.number}`);
-            resolve({ box, url: `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=${data}` });
-          });
-          Promise.all(labels.map(renderLabel)).then((rendered) => {
-            const size = labelSize === "custom" ? [Number(layoutConfig.width) || 100, Number(layoutConfig.height) || 50] : ({ "100x50": [100, 50], "100x30": [100, 30], "80x50": [80, 50] }[labelSize] || [100, 50]);
-            const printWindow = window.open("", "_blank");
-            if (!printWindow) return;
-            printWindow.document.write(`<html><head><title>Etiquetas de caixas</title><style>@page{size:${size[0]}mm ${size[1]}mm ${labelOrientation === "landscape" ? "landscape" : "portrait"};margin:${labelMargins}mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.label{width:${size[0]}mm;height:${size[1]}mm;display:grid;place-items:center;text-align:center;page-break-after:always;padding:${labelMargins}mm}.label img{width:min(38mm,70%);height:auto}.system{font-size:10pt;font-weight:700;letter-spacing:.08em}.title{font-size:14pt;font-weight:700;margin:2mm 0}.code{font-family:monospace;font-size:12pt;font-weight:700;margin-top:1mm}.location{font-size:9pt;margin-top:1mm}</style></head><body>${rendered.map(({ box, url }) => `<main class="label"><div><div class="system">CONTROLE DE ESTOQUE</div><div class="title">CAIXA CX${box.number}</div><img src="${url}" alt="QR CX${box.number}"><div class="code">CX${box.number}</div><div class="location">Local: ${box.description || "Não informado"}</div></div></main>`).join("")}<script>window.onload=()=>window.print()<\/script></body></html>`);
-            printWindow.document.close();
-          });
         };
 
       const finishActiveBox =
@@ -2229,7 +1994,6 @@
                   <button type="button" onClick={createBox} style={{ minHeight: 42, padding: "9px 13px", border: "none", borderRadius: 5, background: "var(--accent-dark)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>+ NOVA CAIXA</button>
                   <button type="button" onClick={finishActiveBox} disabled={!activeBox} style={{ minHeight: 42, padding: "9px 13px", border: `1px solid ${activeBox ? GREEN : LINE_STRONG}`, borderRadius: 5, background: "transparent", color: activeBox ? GREEN : INK_SOFT, cursor: activeBox ? "pointer" : "not-allowed", fontWeight: 700 }}>FINALIZAR CAIXA</button>
                   <button type="button" onClick={() => setShowInventory((current) => !current)} style={{ minHeight: 42, padding: "9px 13px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 700 }}>CONSULTAR ESTOQUE</button>
-                  <button type="button" onClick={() => setLayoutEditorOpen(true)} style={{ minHeight: 42, padding: "9px 13px", border: `1px solid ${GREEN}`, borderRadius: 5, background: GREEN_BG, color: GREEN, cursor: "pointer", fontWeight: 700 }}>PERSONALIZAR LAYOUT DA ETIQUETA</button>
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) auto", gap: 8, marginTop: 14 }}>
@@ -2249,20 +2013,15 @@
                       <div style={{ marginTop: 5, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "var(--accent)" }}>QR DA CAIXA: CAIXA-{box.number}</div>
                       <div className="box-card-actions panel-actions" style={{ marginTop: 8 }}>
                         <button type="button" onClick={() => setActiveBoxId(box.id)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${GREEN}`, borderRadius: 4, background: "transparent", color: GREEN, cursor: "pointer", fontSize: 11 }}>📦 ABRIR</button>
-                        <button type="button" onClick={() => openLabelFor(box)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${GREEN}`, borderRadius: 4, background: GREEN_BG, color: GREEN, cursor: "pointer", fontSize: 11 }}>ETIQUETA</button>
-                        <button type="button" onClick={() => printLabels([box])} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>IMPRIMIR</button>
-                        <button type="button" onClick={() => openLabelFor(box)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>🔄 REIMPRIMIR</button>
                         <button type="button" onClick={() => exportBox(box, "xlsx")} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>EXCEL</button>
                         <button type="button" onClick={() => exportBox(box, "csv")} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>CSV</button>
                         <button type="button" onClick={() => exportBox(box, "pdf")} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 11 }}>PDF</button>
-                        <button type="button" onClick={() => setLabelBoxes((previous) => previous.some((item) => item.id === box.id) ? previous.filter((item) => item.id !== box.id) : [...previous, box])} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${labelBoxes.some((item) => item.id === box.id) ? GREEN : LINE_STRONG}`, borderRadius: 4, background: labelBoxes.some((item) => item.id === box.id) ? GREEN_BG : "transparent", color: labelBoxes.some((item) => item.id === box.id) ? GREEN : "var(--text)", cursor: "pointer", fontSize: 11 }}>{labelBoxes.some((item) => item.id === box.id) ? "LOTE ✓" : "LOTE"}</button>
                         <button type="button" onClick={() => requestDeleteBox(box)} style={{ padding: "6px 8px", minHeight: 34, border: `1px solid ${RED}`, borderRadius: 4, background: "transparent", color: RED, cursor: "pointer", fontSize: 11 }}>🗑️ EXCLUIR CAIXA</button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              {labelBoxes.length > 0 && <button type="button" onClick={openBatchLabels} style={{ marginTop: 12, minHeight: 42, padding: "9px 13px", border: `1px solid ${GREEN}`, borderRadius: 5, background: GREEN, color: "#fff", cursor: "pointer", fontWeight: 700 }}>GERAR ETIQUETAS EM LOTE ({labelBoxes.length})</button>}
               {exportMessage && <div style={{ marginTop: 12, padding: "9px 11px", borderRadius: 5, background: GREEN_BG, color: GREEN, fontSize: 12, fontWeight: 600 }}>{exportMessage}</div>}
             </section>
 
@@ -3687,27 +3446,28 @@
               title="Histórico / Backup Local"
               active={true}
               trailing={
-                <div className="panel-actions">
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 7,
-                      padding: "6px 10px",
-                      borderRadius: 4,
-                      border: `1px solid ${GREEN}`,
-                      background: GREEN_BG,
-                      color: GREEN,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 16 }}>
-                      {foundMaterialsCount}
-                    </span>
-                    materiais encontrados
-                  </div>
+                <>
+                  <div className="panel-actions">
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 7,
+                        padding: "6px 10px",
+                        borderRadius: 4,
+                        border: `1px solid ${GREEN}`,
+                        background: GREEN_BG,
+                        color: GREEN,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 16 }}>
+                        {foundMaterialsCount}
+                      </span>
+                      materiais encontrados
+                    </div>
                   <button
                     onClick={exportHistory}
                     disabled={!history.length}
@@ -3759,7 +3519,8 @@
                   >
                     {showFullHistory ? "MOSTRAR ÚLTIMOS 10" : "VER HISTÓRICO COMPLETO"}
                   </button>
-                </div>
+                  </div>
+                </>
               }
             >
               {!history.length ? (
@@ -4133,80 +3894,7 @@
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {labelBox && (
-            <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Gerar etiqueta da caixa">
-              <div className="app-modal">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 18px", borderBottom: `1px solid var(--border)` }}>
-                  <strong style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18 }}>Preview da etiqueta</strong>
-                  <button type="button" onClick={() => setLabelBox(null)} aria-label="Fechar preview" style={{ display: "grid", placeItems: "center", width: 40, minHeight: 40, padding: 0, border: `1px solid var(--border)`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer" }}><Icon name="X" size={19} /></button>
-                </div>
-                <div style={{ padding: 18 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 9 }}>
-                    <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700 }}>Quantidade<input type="number" min="1" max="100" value={labelQuantity} onChange={(event) => setLabelQuantity(Math.max(1, Number(event.target.value) || 1))} style={{ padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }} /></label>
-                    <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700 }}>Tamanho<select value={labelSize} onChange={(event) => setLabelSize(event.target.value)} style={{ padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }}><option value="100x50">100 x 50 mm</option><option value="100x30">100 x 30 mm</option><option value="80x50">80 x 50 mm</option><option value="custom">Personalizado</option></select></label>
-                    <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700 }}>Orientação<select value={labelOrientation} onChange={(event) => setLabelOrientation(event.target.value)} style={{ padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }}><option value="portrait">Retrato</option><option value="landscape">Paisagem</option></select></label>
-                    <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700 }}>Margens (mm)<input type="number" min="0" max="20" value={labelMargins} onChange={(event) => setLabelMargins(Math.max(0, Number(event.target.value) || 0))} style={{ padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }} /></label>
-                  </div>
-                  <div className="label-preview print-label">
-                    <div><div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em" }}>CONTROLE DE ESTOQUE</div><div style={{ margin: "5px 0", fontSize: 20, fontWeight: 700 }}>CAIXA CX{labelBox.number}</div>{window.QRCode ? <canvas ref={labelCanvasRef} /> : <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=6&data=${encodeURIComponent(`CX${labelBox.number}`)}`} alt={`QR CX${labelBox.number}`} style={{ width: 180, height: 180 }} />}<div style={{ marginTop: 5, fontFamily: "monospace", fontSize: 16, fontWeight: 700 }}>CX{labelBox.number}</div><div style={{ marginTop: 4, fontSize: 12 }}>Local: {labelBox.description || "Não informado"}</div></div>
-                  </div>
-                  <div className="panel-actions">
-                    <button type="button" onClick={() => setLabelBox(null)} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 700 }}>VOLTAR</button>
-                    <button type="button" onClick={() => printLabels()} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${GREEN}`, borderRadius: 5, background: GREEN, color: "#fff", cursor: "pointer", fontWeight: 700 }}>📄 GERAR PDF</button>
-                    <button type="button" onClick={() => printLabels()} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${INK}`, borderRadius: 5, background: INK, color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨️ IMPRIMIR ETIQUETA</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {layoutEditorOpen && (
-            <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Personalização de Layout da Etiqueta">
-              <div className="app-modal" style={{ width: "min(100%, 1080px)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 18px", borderBottom: `1px solid var(--border)` }}>
-                  <div><strong style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18 }}>Personalização de Layout da Etiqueta</strong><div className="muted-text" style={{ marginTop: 3, fontSize: 12 }}>Unidades em mm · conversão para dots somente na impressão</div></div>
-                  <button type="button" onClick={() => setLayoutEditorOpen(false)} aria-label="Fechar editor" style={{ display: "grid", placeItems: "center", width: 40, minHeight: 40, padding: 0, border: `1px solid var(--border)`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer" }}><Icon name="X" size={19} /></button>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.05fr) minmax(330px, .95fr)", gap: 18, padding: 18 }}>
-                  <div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
-                      <input value={layoutName} onChange={(event) => setLayoutName(event.target.value)} placeholder="Nome do layout" style={{ flex: "1 1 220px", minWidth: 0, padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }} />
-                      <select value={selectedLayoutId} onChange={(event) => loadLayoutProfile(event.target.value)} style={{ flex: "1 1 180px", padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }}><option value="">Layouts salvos</option>{labelLayouts.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select>
-                      <button type="button" onClick={() => { setSelectedLayoutId(""); setLayoutName("Novo perfil"); setLayoutConfig({ width: 100, height: 50, gap: 2, margins: { left: 3, right: 3, top: 3, bottom: 3 }, orientation: "portrait", scaleElements: false }); setLayoutAlert("Novo perfil pronto para edição."); }} style={{ minHeight: 38, padding: "7px 9px", border: `1px solid ${GREEN}`, borderRadius: 4, background: GREEN_BG, color: GREEN, cursor: "pointer", fontSize: 11, fontWeight: 700 }}>+ NOVO PERFIL</button>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(75px, 1fr))", gap: 7, marginBottom: 10 }}>
-                      {[['width','Largura'],['height','Altura'],['gap','Gap']].map(([key, label]) => <label key={key} style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>{label} (mm)<input type="number" min="1" step="0.1" value={layoutConfig[key]} onChange={(event) => setLayoutConfig((previous) => ({ ...previous, [key]: Number(event.target.value) || 1 }))} style={{ minWidth: 0, padding: "8px 7px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }} /></label>)}
-                      <label style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>Orientação<select value={layoutConfig.orientation} onChange={(event) => setLayoutConfig((previous) => ({ ...previous, orientation: event.target.value }))} style={{ minWidth: 0, padding: "8px 7px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }}><option value="portrait">Retrato</option><option value="landscape">Paisagem</option></select></label>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7, marginBottom: 12 }}>
-                      {Object.entries(layoutConfig.margins).map(([key, value]) => <label key={key} style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>{key} (mm)<input type="number" min="0" step="0.1" value={value} onChange={(event) => setLayoutConfig((previous) => ({ ...previous, margins: { ...previous.margins, [key]: Number(event.target.value) || 0 } }))} style={{ minWidth: 0, padding: "8px 7px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }} /></label>)}
-                    </div>
-                    <div style={{ position: "relative", width: "100%", aspectRatio: `${layoutConfig.width} / ${layoutConfig.height}`, maxHeight: 470, border: `1px solid ${LINE_STRONG}`, background: "#fff", overflow: "hidden" }}>
-                      <div style={{ position: "absolute", inset: `${layoutConfig.margins.top / layoutConfig.height * 100}% ${layoutConfig.margins.right / layoutConfig.width * 100}% ${layoutConfig.margins.bottom / layoutConfig.height * 100}% ${layoutConfig.margins.left / layoutConfig.width * 100}%`, border: `1px dashed ${AMBER}`, pointerEvents: "none" }} />
-                      <span style={{ position: "absolute", top: 4, left: 6, color: AMBER, fontSize: 10, fontWeight: 700 }}>ÁREA SEGURA</span>
-                      {layoutElements.map((element) => { const unsafe = getUnsafeElements().some((item) => item.id === element.id); return <button type="button" key={element.id} draggable={!element.locked} onDragStart={() => setDraggedElementId(element.id)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const rect = event.currentTarget.parentElement.getBoundingClientRect(); const x = Math.max(0, Math.min(layoutConfig.width - element.width, ((event.clientX - rect.left) / rect.width) * layoutConfig.width - element.width / 2)); const y = Math.max(0, Math.min(layoutConfig.height - element.height, ((event.clientY - rect.top) / rect.height) * layoutConfig.height - element.height / 2)); updateLayoutElement(draggedElementId || element.id, { x, y }); setDraggedElementId(""); }} onClick={() => setSelectedElementId(element.id)} style={{ position: "absolute", left: `${element.x / layoutConfig.width * 100}%`, top: `${element.y / layoutConfig.height * 100}%`, width: `${element.width / layoutConfig.width * 100}%`, height: `${element.height / layoutConfig.height * 100}%`, transform: `rotate(${element.rotation || 0}deg)`, border: `1px solid ${unsafe ? RED : element.id === selectedElementId ? GREEN : "#9aa89d"}`, background: element.type === "qr" ? "#eef5ee" : "rgba(46,125,91,.08)", color: "#172117", overflow: "hidden", fontSize: `${Math.max(8, element.fontSize * 3)}px`, fontWeight: element.bold ? 700 : 400, textAlign: element.align, cursor: element.locked ? "not-allowed" : "move" }}>{element.type === "qr" ? "QR" : element.type === "barcode" ? "|||||" : element.type === "line" ? "" : element.type === "rect" ? "" : element.value}</button>; })}
-                    </div>
-                    {getUnsafeElements().length > 0 && <div style={{ marginTop: 9, padding: 9, borderRadius: 5, background: RED_BG, color: RED, fontSize: 12, fontWeight: 700 }}>⚠️ Elemento ultrapassa a área de impressão. <button type="button" onClick={fitLayoutToLabel} style={{ marginLeft: 8, minHeight: 30, padding: "5px 8px", border: `1px solid ${RED}`, borderRadius: 4, background: "transparent", color: RED, cursor: "pointer", fontSize: 11 }}>CORRIGIR AUTOMATICAMENTE</button></div>}
-                  </div>
-                  <div>
-                    <div style={{ padding: 12, border: `1px solid ${LINE}`, borderRadius: 6, background: "var(--surface-soft)" }}>
-                      <strong style={{ fontSize: 12 }}>PERFIL DA IMPRESSORA</strong>
-                      <select value={printerProfile.model} onChange={(event) => setPrinterProfile({ model: event.target.value, ...PRINTER_PRESETS[event.target.value] })} style={{ width: "100%", marginTop: 8, padding: "9px 10px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5 }}><option>Zebra ZD220</option><option>Zebra ZT410</option><option>Zebra ZT411</option><option>Outra impressora</option></select>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginTop: 8 }}><label style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>DPI<select value={printerProfile.dpi} onChange={(event) => setPrinterProfile((previous) => ({ ...previous, dpi: Number(event.target.value) }))} style={{ padding: "8px 7px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }}>{DPI_OPTIONS.map((dpi) => <option key={dpi}>{dpi}</option>)}</select></label><label style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>Largura máx. (mm)<input type="number" value={printerProfile.maxWidth} onChange={(event) => setPrinterProfile((previous) => ({ ...previous, maxWidth: Number(event.target.value) || 1 }))} style={{ padding: "8px 7px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }} /></label><label style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>Mídia<select value={printerProfile.media} onChange={(event) => setPrinterProfile((previous) => ({ ...previous, media: event.target.value, sensor: event.target.value }))} style={{ padding: "8px 7px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }}><option>Gap</option><option>Black Mark</option><option>Continuous</option></select></label><label style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>Velocidade<input type="number" value={printerProfile.speed} onChange={(event) => setPrinterProfile((previous) => ({ ...previous, speed: Number(event.target.value) || 1 }))} style={{ padding: "8px 7px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }} /></label></div>
-                      <div style={{ marginTop: 9, padding: 8, background: GREEN_BG, color: GREEN, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>Área: {mmToDots(layoutConfig.width)} × {mmToDots(layoutConfig.height)} dots · {printerProfile.dpi} DPI</div>
-                      <div className="panel-actions" style={{ marginTop: 8 }}><button type="button" onClick={() => setPrinterProfile((previous) => ({ ...previous, calibratedAt: new Date().toISOString() }))} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 11 }}>CALIBRAR IMPRESSORA</button><button type="button" onClick={printTestLabel} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${GREEN}`, borderRadius: 4, background: GREEN_BG, color: GREEN, cursor: "pointer", fontSize: 11 }}>🖨️ IMPRIMIR TESTE</button></div>
-                    </div>
-                    <div style={{ marginTop: 12, padding: 12, border: `1px solid ${LINE}`, borderRadius: 6 }}><strong style={{ fontSize: 12 }}>ELEMENTOS</strong><div className="panel-actions" style={{ marginTop: 8 }}><button type="button" onClick={() => addLayoutElement("text")} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 11 }}>TEXTO</button><button type="button" onClick={() => addLayoutElement("qr")} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 11 }}>QR CODE</button><button type="button" onClick={() => addLayoutElement("barcode")} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 11 }}>BARRAS</button><button type="button" onClick={() => addLayoutElement("line")} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 11 }}>LINHA</button><button type="button" onClick={() => addLayoutElement("rect")} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 11 }}>RETÂNGULO</button></div></div>
-                    {layoutElements.find((element) => element.id === selectedElementId) && (() => { const element = layoutElements.find((item) => item.id === selectedElementId); return <div style={{ marginTop: 12, padding: 12, border: `1px solid ${LINE}`, borderRadius: 6 }}><strong style={{ fontSize: 12 }}>ELEMENTO SELECIONADO: {element.label}</strong><div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7, marginTop: 8 }}>{[['x','X'],['y','Y'],['width','Largura'],['height','Altura']].map(([key, label]) => <label key={key} style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>{label} (mm)<input type="number" step="0.1" value={element[key]} disabled={element.locked} onChange={(event) => updateLayoutElement(element.id, { [key]: Number(event.target.value) || 0 })} style={{ minWidth: 0, padding: "7px 5px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }} /></label>)}</div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7, marginTop: 8 }}><label style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>Fonte<input type="number" step="0.1" value={element.fontSize} onChange={(event) => updateLayoutElement(element.id, { fontSize: Number(event.target.value) || 1 })} style={{ padding: "7px 5px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }} /></label><label style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>Rotação<select value={element.rotation} onChange={(event) => updateLayoutElement(element.id, { rotation: Number(event.target.value) })} style={{ padding: "7px 5px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }}><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label><label style={{ display: "grid", gap: 4, fontSize: 11, fontWeight: 700 }}>Alinhamento<select value={element.align} onChange={(event) => updateLayoutElement(element.id, { align: event.target.value })} style={{ padding: "7px 5px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }}><option>left</option><option>center</option><option>right</option></select></label></div><input value={element.value} disabled={element.locked} onChange={(event) => updateLayoutElement(element.id, { value: event.target.value })} style={{ width: "100%", marginTop: 8, padding: "8px 7px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4 }} /><div className="panel-actions" style={{ marginTop: 8 }}><button type="button" onClick={() => updateLayoutElement(element.id, { bold: !element.bold })} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: element.bold ? GREEN_BG : "transparent", cursor: "pointer", fontWeight: 700 }}>NEGRITO</button><button type="button" onClick={duplicateLayoutElement} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: "transparent", cursor: "pointer" }}>DUPLICAR</button><button type="button" onClick={() => updateLayoutElement(element.id, { locked: !element.locked })} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${LINE_STRONG}`, borderRadius: 4, background: element.locked ? GREEN_BG : "transparent", cursor: "pointer" }}>{element.locked ? "DESBLOQUEAR" : "BLOQUEAR"}</button><button type="button" onClick={removeLayoutElement} style={{ minHeight: 34, padding: "6px 8px", border: `1px solid ${RED}`, borderRadius: 4, background: "transparent", color: RED, cursor: "pointer" }}>EXCLUIR</button></div></div>; })()}
-                    <div className="panel-actions" style={{ marginTop: 12 }}><button type="button" onClick={saveLayoutProfile} style={{ minHeight: 40, padding: "8px 11px", border: `1px solid ${GREEN}`, borderRadius: 5, background: GREEN, color: "#fff", cursor: "pointer", fontWeight: 700 }}>💾 SALVAR LAYOUT</button><button type="button" onClick={exportLayoutProfile} style={{ minHeight: 40, padding: "8px 11px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5, background: "transparent", cursor: "pointer" }}>EXPORTAR LAYOUT</button><label style={{ display: "inline-flex", alignItems: "center", minHeight: 40, padding: "8px 11px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5, cursor: "pointer", fontSize: 12 }}>IMPORTAR LAYOUT<input type="file" accept=".json,.layout.json,application/json" onChange={importLayoutProfile} style={{ display: "none" }} /></label><button type="button" onClick={() => downloadBlob(new Blob([generateZpl()], { type: "text/plain" }), `${layoutName.replace(/[^a-z0-9]+/gi, "_")}.zpl`)} style={{ minHeight: 40, padding: "8px 11px", border: `1px solid ${INK}`, borderRadius: 5, background: INK, color: "#fff", cursor: "pointer", fontWeight: 700 }}>EXPORTAR ZPL</button></div>
-                    {layoutAlert && <div style={{ marginTop: 10, padding: 9, borderRadius: 5, background: GREEN_BG, color: GREEN, fontSize: 12, fontWeight: 600 }}>{layoutAlert}</div>}
-                  </div>
-                </div>
-              </div>
-            </div>
+</div>
           )}
 
         </div>

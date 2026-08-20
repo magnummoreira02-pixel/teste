@@ -1,0 +1,12 @@
+{
+  "name": "zebra-print-proxy",
+  "version": "1.0.0",
+  "description": "Proxy local para impressão ZPL em impressoras Zebra via rede",
+  "main": "print-server.js",
+  "scripts": {
+    "start": "node print-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
