@@ -1530,8 +1530,15 @@
       const confirmDeleteBox =
         () => {
           if (!deleteBoxCandidate) return;
-          if (deleteBoxCandidate.materials?.length) return;
+          const materialCodes = (deleteBoxCandidate.materials || []).map((material) => normalizeValue(material.code));
           setBoxes((previous) => previous.filter((box) => box.id !== deleteBoxCandidate.id));
+          if (materialCodes.length) {
+            setHistory((previous) => {
+              const nextHistory = previous.filter((item) => !materialCodes.includes(normalizeValue(item.code)));
+              localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+              return nextHistory;
+            });
+          }
           setMovements((previous) => [{
             id: `box-delete-${Date.now()}`,
             date: new Date().toLocaleDateString("pt-BR"),
@@ -1544,7 +1551,7 @@
           }, ...previous]);
           if (activeBoxId === deleteBoxCandidate.id) setActiveBoxId("");
           setDeleteBoxCandidate(null);
-          setExportMessage(`CAIXA ${deleteBoxCandidate.number} excluída. O histórico foi preservado.`);
+          setExportMessage(`CAIXA ${deleteBoxCandidate.number} excluída${materialCodes.length ? ` e ${materialCodes.length} material(is) removido(s) do estoque` : ""}.`);
         };
 
       const finishActiveBox =
@@ -3884,13 +3891,13 @@
                     <div><strong>Data de criação:</strong> {deleteBoxCandidate.createdAt}</div>
                   </div>
                   {deleteBoxCandidate.materials?.length ? (
-                    <div style={{ marginTop: 16, padding: 12, border: `1px solid ${RED}`, borderRadius: 6, color: RED, fontSize: 13 }}><strong>⚠️ CAIXA POSSUI MATERIAIS</strong><br />Esta caixa possui {deleteBoxCandidate.materials.length} materiais armazenados.<br /><br />Transfira os materiais para outra caixa ou remova-os antes de excluir.</div>
+                    <div style={{ marginTop: 16, padding: 12, border: `1px solid ${RED}`, borderRadius: 6, color: RED, fontSize: 13 }}><strong>⚠️ ATENÇÃO</strong><br />Esta caixa possui {deleteBoxCandidate.materials.length} materiais armazenados.<br /><br />Ao excluir, a caixa <strong>e os {deleteBoxCandidate.materials.length} materiais</strong> serão removidos do registro e do estoque. Essa ação não poderá ser desfeita.</div>
                   ) : (
                     <div style={{ marginTop: 16, color: RED, fontSize: 13 }}>Essa ação não poderá ser desfeita.</div>
                   )}
                   <div className="panel-actions" style={{ marginTop: 20 }}>
                     <button type="button" onClick={() => setDeleteBoxCandidate(null)} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${LINE_STRONG}`, borderRadius: 5, background: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 700 }}>CANCELAR</button>
-                    <button type="button" onClick={confirmDeleteBox} disabled={Boolean(deleteBoxCandidate.materials?.length)} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${RED}`, borderRadius: 5, background: deleteBoxCandidate.materials?.length ? "transparent" : RED, color: deleteBoxCandidate.materials?.length ? INK_SOFT : "#fff", cursor: deleteBoxCandidate.materials?.length ? "not-allowed" : "pointer", fontWeight: 700 }}>🗑️ EXCLUIR CAIXA</button>
+                    <button type="button" onClick={confirmDeleteBox} style={{ minHeight: 42, padding: "9px 14px", border: `1px solid ${RED}`, borderRadius: 5, background: RED, color: "#fff", cursor: "pointer", fontWeight: 700 }}>🗑️ EXCLUIR CAIXA{deleteBoxCandidate.materials?.length ? ` E ${deleteBoxCandidate.materials.length} MATERIAL(IS)` : ""}</button>
                   </div>
                 </div>
               </div>
