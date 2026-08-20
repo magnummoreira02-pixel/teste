@@ -597,7 +597,6 @@
     const HISTORY_STORAGE_KEY = "selecao-material-historico-v1";
     const BOXES_STORAGE_KEY = "selecao-material-caixas-v1";
     const MOVEMENTS_STORAGE_KEY = "selecao-material-movimentacoes-v1";
-    const BOX_SEQUENCE_STORAGE_KEY = "selecao-material-caixa-sequencia-v1";
     const BACKUP_VERSION = 1;
 
 
@@ -1506,9 +1505,7 @@
       const createBox =
         () => {
           const now = new Date();
-          const previousSequence = Number(localStorage.getItem(BOX_SEQUENCE_STORAGE_KEY) || 0);
-          const nextNumber = Math.max(previousSequence, ...boxes.map((box) => Number(box.number) || 0)) + 1;
-          localStorage.setItem(BOX_SEQUENCE_STORAGE_KEY, String(nextNumber));
+          const nextNumber = boxes.reduce((max, box) => Math.max(max, Number(box.number) || 0), 0) + 1;
           const box = {
             id: `box-${now.getTime()}`,
             number: String(nextNumber).padStart(3, "0"),
