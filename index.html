@@ -31,12 +31,14 @@
 
     body {
       font-family:
+        'Inter',
         'IBM Plex Sans',
         -apple-system,
         BlinkMacSystemFont,
         'Segoe UI',
         sans-serif;
-      background: #F1F1EC;
+      background: #0B0F0D;
+      color: #E8F0EB;
     }
 
     body {
@@ -45,29 +47,57 @@
 
     .app-shell {
       --surface: #FFFFFF;
-      --surface-soft: #F8FAF8;
-      --app-bg: #F5F7F5;
-      --text: #172117;
-      --muted: #667085;
-      --border: #DDE3DD;
-      --accent: #2E7D32;
-      --accent-dark: #1B5E20;
-      --accent-soft: #E8F5E9;
+      --surface-soft: #F5F8F6;
+      --surface-raised: #FFFFFF;
+      --app-bg: #EEF2EF;
+      --text: #12231A;
+      --muted: #5C6B63;
+      --border: #DDE5E0;
+      --border-strong: #C2CEC7;
+      --accent: #15803D;
+      --accent-dark: #0F6B33;
+      --accent-soft: rgba(21, 128, 61, 0.09);
+      --accent-bg: rgba(21, 128, 61, 0.09);
+      --warn: #B45309;
+      --warn-bg: rgba(180, 83, 9, 0.10);
+      --danger: #DC2626;
+      --danger-bg: rgba(220, 38, 38, 0.10);
+      --purple: #7C3AED;
+      --purple-bg: rgba(124, 58, 237, 0.12);
+      --blue: #2563EB;
+      --blue-bg: rgba(37, 99, 235, 0.12);
+      --orange: #EA580C;
+      --orange-bg: rgba(234, 88, 12, 0.12);
       background: var(--app-bg) !important;
       color: var(--text) !important;
       min-height: 100vh;
+      font-family: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+      -webkit-font-smoothing: antialiased;
     }
 
     .app-shell.dark {
-      --surface: #121814;
-      --surface-soft: #182019;
-      --app-bg: #0B0F0C;
-      --text: #F1F5F2;
-      --muted: #98A69B;
-      --border: #26352A;
-      --accent: #4CAF50;
-      --accent-dark: #1B5E20;
-      --accent-soft: #1B2C1E;
+      --surface: #111815;
+      --surface-soft: #151C18;
+      --surface-raised: #1A221E;
+      --app-bg: #0B0F0D;
+      --text: #E8F0EB;
+      --muted: #8D9B93;
+      --border: #26342D;
+      --border-strong: #35483E;
+      --accent: #22C55E;
+      --accent-dark: #15803D;
+      --accent-soft: rgba(34, 197, 94, 0.14);
+      --accent-bg: rgba(34, 197, 94, 0.10);
+      --warn: #EAB308;
+      --warn-bg: rgba(234, 179, 8, 0.12);
+      --danger: #EF4444;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      --purple: #A78BFA;
+      --purple-bg: rgba(167, 139, 250, 0.14);
+      --blue: #60A5FA;
+      --blue-bg: rgba(96, 165, 250, 0.14);
+      --orange: #F59E0B;
+      --orange-bg: rgba(245, 158, 11, 0.14);
     }
 
     .app-shell .panel-surface {
@@ -87,16 +117,48 @@
       background: var(--surface-soft) !important;
       color: var(--text) !important;
       border-color: var(--border) !important;
+      caret-color: var(--accent);
     }
 
+    .app-shell input::placeholder { color: var(--muted) !important; }
+
     .app-shell .muted-text { color: var(--muted) !important; }
+
+    .app-shell .step-badge {
+      border-radius: 50% !important;
+    }
 
     .app-shell.dark .step-badge {
       border-color: var(--accent) !important;
       color: #fff !important;
       background: var(--accent) !important;
-      box-shadow: 0 0 0 2px var(--accent-soft);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
+
+    .app-shell input:focus,
+    .app-shell select:focus {
+      outline: none !important;
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .app-shell button {
+      border-radius: 9px !important;
+      font-weight: 600;
+      transition:
+        background-color 180ms ease,
+        border-color 180ms ease,
+        color 180ms ease,
+        filter 180ms ease,
+        transform 120ms ease,
+        box-shadow 180ms ease,
+        opacity 180ms ease;
+    }
+
+    .app-shell button:hover:not(:disabled) { filter: brightness(1.07); }
+    .app-shell button:active:not(:disabled) { transform: translateY(1px); }
+    .app-shell button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .app-shell button:disabled { opacity: 0.45; cursor: not-allowed; }
 
     .agro-header {
       max-width: 1200px;
@@ -108,7 +170,8 @@
       gap: 18px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 14px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .brand-mark {
@@ -118,13 +181,14 @@
     }
 
     .brand-icon {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       display: grid;
       place-items: center;
-      border-radius: 7px;
+      border-radius: 10px;
       color: #FFFFFF;
-      background: var(--accent-dark);
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      box-shadow: 0 6px 16px -8px var(--accent);
     }
 
     .theme-toggle {
@@ -132,8 +196,8 @@
       align-items: center;
       gap: 8px;
       border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 8px 11px;
+      border-radius: 999px;
+      padding: 8px 13px;
       color: var(--text);
       background: var(--surface-soft);
       cursor: pointer;
@@ -150,18 +214,25 @@
     }
 
     .metric-card {
-      padding: 14px 16px;
+      padding: 16px 18px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-left: 3px solid var(--accent);
-      border-radius: 7px;
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .panel-surface {
+      border-radius: 12px !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 26px -22px rgba(0, 0, 0, 0.25);
     }
 
     .reader-frame {
       background: var(--surface-soft);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
       box-shadow: 0 0 0 3px var(--accent-soft);
+      transition: border-color 180ms ease, box-shadow 180ms ease;
     }
 
     .reader-frame:focus-within {
@@ -171,19 +242,47 @@
 
     .located-card {
       animation: located-in 180ms ease-out;
-      box-shadow: 0 8px 24px rgba(27, 94, 32, 0.12);
+      border: 1px solid var(--accent-soft);
+      box-shadow: 0 8px 24px -14px rgba(0, 0, 0, 0.28);
     }
 
     .located-code {
       padding: 12px 14px;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       background: var(--surface-soft);
     }
 
     @keyframes located-in {
       from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    .drop-zone {
+      transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .drop-zone:hover {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .history-counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px 8px 10px;
+      border: 1px solid var(--accent-soft);
+      border-radius: 999px;
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .history-counter-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
     }
 
     @media (max-width: 700px) {
@@ -236,16 +335,17 @@
       place-items: center;
       padding: 16px;
       background: rgba(4, 12, 6, 0.72);
+      backdrop-filter: blur(4px);
     }
 
     .scanner-modal {
       width: min(100%, 520px);
       overflow: hidden;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 14px;
       background: var(--surface);
       color: var(--text);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
     }
 
     .scanner-video {
@@ -273,6 +373,7 @@
       place-items: center;
       padding: 16px;
       background: rgba(4, 12, 6, 0.7);
+      backdrop-filter: blur(4px);
     }
 
     .app-modal {
@@ -280,10 +381,10 @@
       max-height: min(92vh, 820px);
       overflow: auto;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 14px;
       background: var(--surface);
       color: var(--text);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
     }
 
     .label-preview {
@@ -300,6 +401,15 @@
     }
 
     .label-preview canvas { max-width: 180px; height: auto !important; }
+
+    .app-shell ::-webkit-scrollbar { width: 10px; height: 10px; }
+    .app-shell ::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 8px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+    .app-shell ::-webkit-scrollbar-track { background: transparent; }
 
     @media print {
       body * { visibility: hidden !important; }
@@ -361,7 +471,7 @@
         gap: 8px 12px;
         padding: 12px;
         border: 1px solid var(--border);
-        border-radius: 7px;
+        border-radius: 10px;
         background: var(--surface-soft);
       }
       .history-card-label {
@@ -388,7 +498,7 @@
         margin-bottom: 10px;
         padding: 8px 12px;
         border: 1px solid var(--border);
-        border-radius: 7px;
+        border-radius: 10px;
       }
       .items-table-wrap td {
         display: flex;
@@ -577,30 +687,30 @@
        CORES
     ========================================================= */
 
-    const PAPER = "#F1F1EC";
-    const PANEL = "#FFFFFF";
+    const PAPER = "var(--surface-soft)";
+    const PANEL = "var(--surface)";
 
-    const INK = "#1E2A38";
-    const INK_SOFT = "#5B6B7C";
+    const INK = "var(--text)";
+    const INK_SOFT = "var(--muted)";
 
-    const LINE = "#D8D9D0";
-    const LINE_STRONG = "#B7BAAF";
+    const LINE = "var(--border)";
+    const LINE_STRONG = "var(--border-strong)";
 
-    const AMBER = "#C97A1C";
-    const AMBER_BG = "#FBEEDD";
+    const AMBER = "var(--warn)";
+    const AMBER_BG = "var(--warn-bg)";
 
-    const GREEN = "#2E7D5B";
-    const GREEN_BG = "#E4F2EA";
+    const GREEN = "var(--accent)";
+    const GREEN_BG = "var(--accent-bg)";
 
-    const RED = "#B3402E";
-    const RED_BG = "#FBEAE6";
+    const RED = "var(--danger)";
+    const RED_BG = "var(--danger-bg)";
 
-    const PURPLE = "#7A3E9D";
-    const PURPLE_BG = "#F0E6F5";
-    const BLUE = "#2468A8";
-    const BLUE_BG = "#E5F0FA";
-    const ORANGE = "#C96A16";
-    const ORANGE_BG = "#FCE8D2";
+    const PURPLE = "var(--purple)";
+    const PURPLE_BG = "var(--purple-bg)";
+    const BLUE = "var(--blue)";
+    const BLUE_BG = "var(--blue-bg)";
+    const ORANGE = "var(--orange)";
+    const ORANGE_BG = "var(--orange-bg)";
     const HISTORY_STORAGE_KEY = "selecao-material-historico-v1";
     const BOXES_STORAGE_KEY = "selecao-material-caixas-v1";
     const MOVEMENTS_STORAGE_KEY = "selecao-material-movimentacoes-v1";
@@ -613,7 +723,7 @@
 
     const FONT_IMPORT = `
       @import url(
-        'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700
+        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700
         &family=IBM+Plex+Sans:wght@400;500;600
         &family=IBM+Plex+Mono:wght@400;500;600
         &display=swap'
@@ -727,21 +837,22 @@
 
       return (
         <div
+          className="step-badge"
           style={{
-            width: 30,
-            height: 30,
-            borderRadius: 4,
+            width: 34,
+            height: 34,
+            borderRadius: "50%",
 
             border:
               `1.5px solid ${
-                active ? INK : LINE_STRONG
+                active ? GREEN : LINE_STRONG
               }`,
 
             color:
-              active ? PAPER : INK_SOFT,
+              active ? "#fff" : INK_SOFT,
 
             background:
-              active ? INK : "transparent",
+              active ? GREEN : "transparent",
 
             display: "flex",
             alignItems: "center",
@@ -750,13 +861,19 @@
             fontFamily:
               "'IBM Plex Mono', monospace",
 
-            fontWeight: 600,
-            fontSize: 13,
+            fontWeight: 700,
+            fontSize: 12,
 
-            flexShrink: 0
+            flexShrink: 0,
+
+            boxShadow:
+              active ? `0 0 0 4px ${GREEN_BG}` : "none",
+
+            transition:
+              "background-color 180ms ease, border-color 180ms ease, color 180ms ease"
           }}
         >
-          {n}
+          {String(n).padStart(2, "0")}
         </div>
       );
     }
@@ -769,6 +886,7 @@
     function Panel({
       step,
       title,
+      description,
       active,
       children,
       trailing
@@ -783,15 +901,15 @@
             border:
               `1px solid ${LINE}`,
 
-            borderRadius: 6,
+            borderRadius: 12,
 
             marginBottom: 20,
 
             opacity:
-              active ? 1 : 0.55,
+              active ? 1 : 0.62,
 
             transition:
-              "opacity 0.2s ease"
+              "opacity 0.25s ease, border-color 0.25s ease"
           }}
         >
 
@@ -799,10 +917,10 @@
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 12,
+              gap: 14,
 
               padding:
-                "14px 18px",
+                "16px 20px",
 
               borderBottom:
                 `1px solid ${LINE}`
@@ -814,27 +932,68 @@
               active={active}
             />
 
-            <span
+            <div
               style={{
-                fontFamily:
-                  "'Space Grotesk', sans-serif",
-
-                fontWeight: 600,
-                fontSize: 14,
-
-                letterSpacing:
-                  "0.03em",
-
-                textTransform:
-                  "uppercase",
-
-                color: INK,
-
-                flex: 1
+                flex: 1,
+                minWidth: 0
               }}
             >
-              {title}
-            </span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  flexWrap: "wrap"
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily:
+                      "'Space Grotesk', sans-serif",
+
+                    fontWeight: 600,
+                    fontSize: 15,
+
+                    letterSpacing:
+                      "0.01em",
+
+                    color: INK
+                  }}
+                >
+                  {title}
+                </span>
+
+                {active && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      background: GREEN_BG,
+                      color: GREEN,
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase"
+                    }}
+                  >
+                    <Icon name="Check" size={11} />
+                    Concluída
+                  </span>
+                )}
+              </div>
+
+              {description && (
+                <div
+                  className="muted-text"
+                  style={{ fontSize: 12.5, marginTop: 3 }}
+                >
+                  {description}
+                </div>
+              )}
+            </div>
 
             {trailing}
 
@@ -842,7 +1001,7 @@
 
           <div
             style={{
-              padding: 18
+              padding: 20
             }}
           >
             {children}
@@ -906,7 +1065,7 @@
         useState(["Trait", "Avanco", "Avanço"]);
 
       const [highlightedFieldsColor, setHighlightedFieldsColor] =
-        useState("#FFF1B8");
+        useState("rgba(234, 179, 8, 0.30)");
 
       const [query, setQuery] =
         useState("");
@@ -984,7 +1143,7 @@
         });
 
       const [highlightRule, setHighlightRule] =
-        useState({ column: "", value: "", color: "#FFF1B8" });
+        useState({ column: "", value: "", color: "rgba(234, 179, 8, 0.30)" });
 
       const inputRef =
         useRef(null);
@@ -2084,6 +2243,7 @@
             <Panel
               step={1}
               title="Importar planilha"
+              description="Carregue sua base de materiais"
               active={true}
 
               trailing={
@@ -2135,6 +2295,16 @@
               {!hasData ? (
 
                 <div
+                  className="drop-zone"
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Importar planilha"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      if (inputRef.current) inputRef.current.click();
+                    }
+                  }}
                   onDragOver={(e) => {
 
                     e.preventDefault();
@@ -2164,14 +2334,14 @@
                     border:
                       `2px dashed ${
                         dragOver
-                          ? AMBER
+                          ? GREEN
                           : LINE_STRONG
                       }`,
 
-                    borderRadius: 6,
+                    borderRadius: 12,
 
                     padding:
-                      "36px 20px",
+                      "40px 20px",
 
                     textAlign: "center",
 
@@ -2179,46 +2349,71 @@
 
                     background:
                       dragOver
-                        ? AMBER_BG
-                        : PAPER,
+                        ? GREEN_BG
+                        : "var(--surface-soft)",
 
                     transition:
                       "all 0.15s ease"
                   }}
                 >
 
-                  <Icon
-                    name="UploadCloud"
-                    size={28}
-                    color={
-                      dragOver
-                        ? AMBER
-                        : INK_SOFT
-                    }
-                    style={{
-                      marginBottom: 10
-                    }}
-                  />
-
                   <div
                     style={{
-                      fontWeight: 600,
-                      fontSize: 14,
-                      marginBottom: 4
+                      width: 52,
+                      height: 52,
+                      margin: "0 auto 12px",
+                      display: "grid",
+                      placeItems: "center",
+                      borderRadius: "50%",
+                      background: GREEN_BG,
+                      color: GREEN
                     }}
                   >
-                    Arraste a planilha aqui
-                    ou clique para escolher
+                    <Icon
+                      name="UploadCloud"
+                      size={26}
+                      color={GREEN}
+                    />
                   </div>
 
                   <div
                     style={{
-                      fontSize: 12.5,
+                      fontWeight: 600,
+                      fontSize: 15,
+                      marginBottom: 4,
+                      color: INK
+                    }}
+                  >
+                    {dragOver ? "Solte a planilha aqui" : "Arraste a planilha aqui"}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: INK_SOFT,
+                      marginBottom: 10
+                    }}
+                  >
+                    ou clique para selecionar o arquivo
+                  </div>
+
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      gap: 6,
+                      flexWrap: "wrap",
+                      justifyContent: "center",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: "0.06em",
                       color: INK_SOFT
                     }}
                   >
-                    Formatos aceitos:
-                    .xlsx, .xls, .xlsb, .csv
+                    {["XLSX", "XLS", "XLSB", "CSV"].map((format) => (
+                      <span key={format} style={{ padding: "3px 8px", borderRadius: 5, border: `1px solid ${LINE}`, background: PANEL, fontFamily: "'IBM Plex Mono', monospace" }}>
+                        {format}
+                      </span>
+                    ))}
                   </div>
 
                   <input
@@ -2245,26 +2440,45 @@
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10
+                    gap: 12,
+                    padding: "14px 16px",
+                    border: `1px solid ${LINE}`,
+                    borderRadius: 10,
+                    background: "var(--surface-soft)"
                   }}
                 >
 
-                  <Icon
-                    name="FileSpreadsheet"
-                    size={20}
-                    color={GREEN}
-                  />
+                  <div
+                    style={{
+                      width: 42,
+                      height: 42,
+                      display: "grid",
+                      placeItems: "center",
+                      borderRadius: 10,
+                      background: GREEN_BG,
+                      color: GREEN,
+                      flexShrink: 0
+                    }}
+                  >
+                    <Icon
+                      name="FileSpreadsheet"
+                      size={20}
+                      color={GREEN}
+                    />
+                  </div>
 
                   <div
                     style={{
-                      flex: 1
+                      flex: 1,
+                      minWidth: 0
                     }}
                   >
 
                     <div
                       style={{
                         fontWeight: 600,
-                        fontSize: 13.5
+                        fontSize: 13.5,
+                        overflowWrap: "anywhere"
                       }}
                     >
                       {fileName}
@@ -2321,7 +2535,7 @@
                     border:
                       `1px solid ${RED}`,
 
-                    borderRadius: 4,
+                    borderRadius: 8,
 
                     padding:
                       "10px 12px",
@@ -2353,6 +2567,7 @@
             <Panel
               step={2}
               title="Configurar colunas"
+              description="Defina a coluna QR e os campos exibidos"
               active={hasData}
             >
 
@@ -2553,18 +2768,18 @@
                                 border:
                                   `1px solid ${
                                     checked
-                                      ? INK
+                                      ? GREEN
                                       : LINE_STRONG
                                   }`,
 
                                 background:
                                   checked
-                                    ? INK
+                                    ? GREEN
                                     : "transparent",
 
                                 color:
                                   checked
-                                    ? PAPER
+                                    ? "#fff"
                                     : INK_SOFT,
 
                                 fontSize: 12.5,
@@ -2627,9 +2842,9 @@
                                 gap: 6,
                                 padding: "6px 10px",
                                 borderRadius: 4,
-                                border: `1px solid ${checked ? INK : LINE_STRONG}`,
-                                background: checked ? INK : "transparent",
-                                color: checked ? PAPER : INK_SOFT,
+                                border: `1px solid ${checked ? GREEN : LINE_STRONG}`,
+                                background: checked ? GREEN : "transparent",
+                                color: checked ? "#fff" : INK_SOFT,
                                 fontSize: 12.5,
                                 cursor: "pointer"
                               }}
@@ -2653,7 +2868,7 @@
                             <button
                               key={sheet.name}
                               onClick={() => setSelectedSheets((prev) => checked ? prev.filter((name) => name !== sheet.name) : [...prev, sheet.name])}
-                              style={{ padding: "6px 10px", borderRadius: 4, border: `1px solid ${checked ? INK : LINE_STRONG}`, background: checked ? INK : "transparent", color: checked ? PAPER : INK_SOFT, fontSize: 12.5, cursor: "pointer" }}
+                              style={{ padding: "6px 10px", borderRadius: 4, border: `1px solid ${checked ? GREEN : LINE_STRONG}`, background: checked ? GREEN : "transparent", color: checked ? "#fff" : INK_SOFT, fontSize: 12.5, cursor: "pointer" }}
                             >
                               {checked && <Icon name="Check" size={12} />} {sheet.name}
                             </button>
@@ -2727,6 +2942,7 @@
             <Panel
               step={3}
               title="Buscar material"
+              description="Digite ou leia o QR Code para localizar o item"
               active={readyToSearch}
             >
 
@@ -3454,40 +3670,32 @@
 
             <Panel
               step={4}
-              title="Histórico / Backup Local"
+              title="Histórico de leituras"
+              description="Acompanhe os materiais identificados pelos QR Codes"
               active={true}
               trailing={
                 <>
                   <div className="panel-actions">
                     <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 7,
-                        padding: "6px 10px",
-                        borderRadius: 4,
-                        border: `1px solid ${GREEN}`,
-                        background: GREEN_BG,
-                        color: GREEN,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        whiteSpace: "nowrap"
-                      }}
+                      className="history-counter"
+                      title="Materiais encontrados"
                     >
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 16 }}>
+                      <span className="history-counter-value">
                         {foundMaterialsCount}
                       </span>
-                      materiais encontrados
+                      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                        Materiais encontrados
+                      </span>
                     </div>
                   <button
                     onClick={exportHistory}
                     disabled={!history.length}
                     style={{
-                      border: `1px solid ${history.length ? INK : LINE_STRONG}`,
+                      border: `1px solid ${history.length ? GREEN : LINE_STRONG}`,
                       borderRadius: 4,
                       padding: "6px 10px",
-                      background: history.length ? INK : "transparent",
-                      color: history.length ? PAPER : INK_SOFT,
+                      background: history.length ? GREEN : "transparent",
+                      color: history.length ? "#fff" : INK_SOFT,
                       cursor: history.length ? "pointer" : "not-allowed",
                       fontSize: 12
                     }}
@@ -3512,8 +3720,8 @@
                   <button type="button" onClick={() => saveLocalHistory("xlsx")} disabled={!history.length} style={{ border: `1px solid ${history.length ? GREEN : LINE_STRONG}`, borderRadius: 4, padding: "6px 10px", background: history.length ? GREEN : "transparent", color: history.length ? "#fff" : INK_SOFT, cursor: history.length ? "pointer" : "not-allowed", fontSize: 12 }}>SALVAR HISTÓRICO EXCEL</button>
                   <button type="button" onClick={() => saveLocalHistory("xlsx")} disabled={!history.length} style={{ border: `1px solid ${history.length ? GREEN : LINE_STRONG}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: history.length ? GREEN : INK_SOFT, cursor: history.length ? "pointer" : "not-allowed", fontSize: 12 }}>EXPORTAR AGORA EXCEL</button>
                   <button type="button" onClick={() => saveLocalHistory("csv")} disabled={!history.length} style={{ border: `1px solid ${history.length ? GREEN : LINE_STRONG}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: history.length ? GREEN : INK_SOFT, cursor: history.length ? "pointer" : "not-allowed", fontSize: 12 }}>EXPORTAR CSV</button>
-                  <button type="button" onClick={exportFullBackup} style={{ border: `1px solid ${INK}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 12 }}>BACKUP COMPLETO</button>
-                  <button type="button" onClick={() => backupInputRef.current?.click()} style={{ border: `1px solid ${INK}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: "var(--text)", cursor: "pointer", fontSize: 12 }}>RESTAURAR BACKUP</button>
+                  <button type="button" onClick={exportFullBackup} style={{ border: `1px solid ${GREEN}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: GREEN, cursor: "pointer", fontSize: 12 }}>BACKUP COMPLETO</button>
+                  <button type="button" onClick={() => backupInputRef.current?.click()} style={{ border: `1px solid ${GREEN}`, borderRadius: 4, padding: "6px 10px", background: "transparent", color: GREEN, cursor: "pointer", fontSize: 12 }}>RESTAURAR BACKUP</button>
                   <input ref={backupInputRef} type="file" accept="application/json,.json" onChange={restoreBackup} style={{ display: "none" }} />
                   <button
                     onClick={() => setShowFullHistory((current) => !current)}
@@ -3550,7 +3758,7 @@
                             style={{
                               textAlign: "left",
                               padding: "8px 10px",
-                              borderBottom: `2px solid ${INK}`,
+                              borderBottom: `2px solid ${GREEN}`,
                               color: INK,
                               whiteSpace: "nowrap"
                             }}
@@ -3614,7 +3822,7 @@
               )}
             </Panel>
 
-            <Panel step={6} title="Histórico de movimentações" active={movements.length > 0}>
+            <Panel step={6} title="Histórico de movimentações" description="Movimentações de caixas e materiais" active={movements.length > 0}>
               {!movements.length ? (
                 <div className="muted-text" style={{ fontSize: 13 }}>As movimentações de caixas aparecerão aqui.</div>
               ) : (
@@ -3643,6 +3851,7 @@
                 title={
                   `Itens selecionados (${selectedRows.length})`
                 }
+                description="Planilha filtrada e pronta para consulta"
                 active={true}
               >
 
@@ -3672,7 +3881,7 @@
                               "8px 10px",
 
                             borderBottom:
-                              `2px solid ${INK}`,
+                              `2px solid ${GREEN}`,
 
                             color: INK,
 
@@ -3690,7 +3899,7 @@
                           style={{
                             textAlign: "left",
                             padding: "8px 10px",
-                            borderBottom: `2px solid ${INK}`,
+                            borderBottom: `2px solid ${GREEN}`,
                             color: INK_SOFT,
                             fontWeight: 500,
                             whiteSpace: "nowrap"
@@ -3714,7 +3923,7 @@
                                   "8px 10px",
 
                                 borderBottom:
-                                  `2px solid ${INK}`,
+                                  `2px solid ${GREEN}`,
 
                                 color:
                                   INK_SOFT,
