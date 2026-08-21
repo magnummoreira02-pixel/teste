@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+body {
+  font-family:
+    'Inter',
+    'IBM Plex Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  background: #0B0F0D;
+  color: #E8F0EB;
+}
+
+body {
+  transition: background 180ms ease, color 180ms ease;
+}
+
+.app-shell {
+  --surface: #FFFFFF;
+  --surface-soft: #F5F8F6;
+  --surface-raised: #FFFFFF;
+  --app-bg: #EEF2EF;
+  --text: #12231A;
+  --muted: #5C6B63;
+  --border: #DDE5E0;
+  --border-strong: #C2CEC7;
+  --accent: #15803D;
+  --accent-dark: #0F6B33;
+  --accent-soft: rgba(21, 128, 61, 0.09);
+  --accent-bg: rgba(21, 128, 61, 0.09);
+  --warn: #B45309;
+  --warn-bg: rgba(180, 83, 9, 0.10);
+  --danger: #DC2626;
+  --danger-bg: rgba(220, 38, 38, 0.10);
+  --purple: #7C3AED;
+  --purple-bg: rgba(124, 58, 237, 0.12);
+  --blue: #2563EB;
+  --blue-bg: rgba(37, 99, 235, 0.12);
+  --orange: #EA580C;
+  --orange-bg: rgba(234, 88, 12, 0.12);
+  background: var(--app-bg) !important;
+  color: var(--text) !important;
+  min-height: 100vh;
+  font-family: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell.dark {
+  --surface: #111815;
+  --surface-soft: #151C18;
+  --surface-raised: #1A221E;
+  --app-bg: #0B0F0D;
+  --text: #E8F0EB;
+  --muted: #8D9B93;
+  --border: #26342D;
+  --border-strong: #35483E;
+  --accent: #22C55E;
+  --accent-dark: #15803D;
+  --accent-soft: rgba(34, 197, 94, 0.14);
+  --accent-bg: rgba(34, 197, 94, 0.10);
+  --warn: #EAB308;
+  --warn-bg: rgba(234, 179, 8, 0.12);
+  --danger: #EF4444;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --purple: #A78BFA;
+  --purple-bg: rgba(167, 139, 250, 0.14);
+  --blue: #60A5FA;
+  --blue-bg: rgba(96, 165, 250, 0.14);
+  --orange: #F59E0B;
+  --orange-bg: rgba(245, 158, 11, 0.14);
+}

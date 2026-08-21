@@ -1,16 +1,28 @@
 {
   "name": "zebra-print-proxy",
   "version": "1.0.0",
-  "description": "Proxy local para impressão ZPL em impressoras Zebra via rede",
+  "description": "Sistema de seleção de material + proxy local para impressão ZPL em impressoras Zebra via rede",
   "main": "print-server.js",
   "scripts": {
     "start": "node print-server.js",
-    "preview": "live-server --port=5500 --open=index.html"
+    "server": "node print-server.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "serve:legacy": "live-server --port=5500 --open=index.html"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "live-server": "^1.2.2"
+    "@vitejs/plugin-react": "^4.3.4",
+    "live-server": "^1.2.2",
+    "vite": "^5.4.19",
+    "vitest": "^2.1.9"
   }
 }
