@@ -1,24 +1,17 @@
-// ACHD Material Control - Complete Modular Implementation
+﻿// ACHD Material Control - Complete Modular Implementation
 // Updated with modern dark mode design and full functionality preservation
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import Icon from './components/ui/Icon.jsx';
-import StepBadge from './components/ui/StepBadge.jsx';
 import Panel from './components/ui/Panel.jsx';
-import ColorOption from './components/ui/ColorOption.jsx';
 
 // Import all components
 import Header from './components/Header.jsx';
 import Dashboard from './components/Dashboard.jsx';
-import ControleCaixas from './components/ControleCaixas.jsx';
-import ConsultaEstoque from './components/ConsultaEstoque.jsx';
-import MapaFisico from './components/MapaFisico.jsx';
 import ImportadorPlanilha from './components/ImportadorPlanilha.jsx';
 import ConfiguradorColunas from './components/ConfiguradorColunas.jsx';
 import BuscaMaterial from './components/BuscaMaterial.jsx';
 import Historico from './components/Historico.jsx';
 import Movimentacoes from './components/Movimentacoes.jsx';
-import ItensSelecionados from './components/ItensSelecionados.jsx';
 import QRScanner from './components/QRScanner.jsx';
 import DeleteBoxModal from './components/DeleteBoxModal.jsx';
 import Backup from './components/Backup.jsx';
@@ -27,9 +20,7 @@ import Backup from './components/Backup.jsx';
 import * as storageService from './services/storageService.js';
 import * as excelService from './services/excelService.js';
 import * as backupService from './services/backupService.js';
-import * as qrService from './services/qrService.js';
 import * as printService from './services/printService.js';
-import * as downloadService from './services/downloadService.js';
 
 // Import utils
 import * as utils from './utils/validation.js';
@@ -107,14 +98,14 @@ const TYPOGRAPHY = {
   
   // Font weights
   light: 400,
-  normal: 500,
+  normalWeight: 500,
   medium: 600,
   semibold: 700,
   bold: 800,
   
   // Line heights
-  tight: 1.2,
-  normal: 1.5,
+  tightLineHeight: 1.2,
+  lineHeight: 1.5,
   relaxed: 1.8,
 };
 
@@ -194,12 +185,6 @@ const App = () => {
 
   // Effects for persistent storage
   useEffect(() => {
-    storageService.loadHistory().then(loaded => {
-      setHistory(loaded);
-    });
-  }, []);
-
-  useEffect(() => {
     storageService.saveBoxes(boxes);
   }, [boxes]);
 
@@ -230,7 +215,7 @@ const App = () => {
         const results = await detector.detect(scannerVideoRef.current);
         if (results.length > 0 && results[0].rawValue) {
           const value = results[0].rawValue;
-          setScannerStatus("Leitura concluída");
+          setScannerStatus("Leitura concluÃ­da");
           if (navigator.vibrate) navigator.vibrate(120);
           try {
             const audio = new AudioContext();
@@ -250,22 +235,22 @@ const App = () => {
           return;
         }
       } catch (error) {
-        setScannerStatus("Aponte a câmera para um QR Code");
+        setScannerStatus("Aponte a cÃ¢mera para um QR Code");
       }
       animationFrame = requestAnimationFrame(() => scanFrame(detector));
     };
 
     const startScanner = async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setScannerStatus("Câmera indisponível. Digite o código abaixo.");
+        setScannerStatus("CÃ¢mera indisponÃ­vel. Digite o cÃ³digo abaixo.");
         return;
       }
       if (!window.BarcodeDetector) {
-        setScannerStatus("Este navegador não detecta QR automaticamente. Digite o código abaixo.");
+        setScannerStatus("Este navegador nÃ£o detecta QR automaticamente. Digite o cÃ³digo abaixo.");
         return;
       }
       try {
-        setScannerStatus("Solicitando acesso à câmera...");
+        setScannerStatus("Solicitando acesso Ã  cÃ¢mera...");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
           audio: false
@@ -277,10 +262,10 @@ const App = () => {
         scannerStreamRef.current = stream;
         scannerVideoRef.current.srcObject = stream;
         await scannerVideoRef.current.play();
-        setScannerStatus("Aponte a câmera para um QR Code");
+        setScannerStatus("Aponte a cÃ¢mera para um QR Code");
         scanFrame(new BarcodeDetector({ formats: ["qr_code"] }));
       } catch (error) {
-        setScannerStatus("Não foi possível acessar a câmera. Verifique a permissão.");
+        setScannerStatus("NÃ£o foi possÃ­vel acessar a cÃ¢mera. Verifique a permissÃ£o.");
       }
     };
 
@@ -327,7 +312,7 @@ const App = () => {
   const matchedAvancoValue =
     matched
       ? Object.entries(matched).find(
-          ([key]) => ["avanco", "avanço"].includes(normalizeValue(key))
+          ([key]) => ["avanco", "avanÃ§o"].includes(normalizeValue(key))
         )?.[1]
       : "";
 
@@ -335,7 +320,7 @@ const App = () => {
     history.filter((item) => item.status === "ENCONTRADO").length;
 
   const notFoundMaterialsCount =
-    history.filter((item) => item.status === "NÃO ENCONTRADO").length;
+    history.filter((item) => item.status === "NÃƒO ENCONTRADO").length;
 
   const latestReading = history[0];
 
@@ -379,7 +364,7 @@ const App = () => {
       })
       .catch((err) => {
         console.error(err);
-        setParseError(err?.message || "Não foi possível ler este arquivo. Confirme se é um .xlsx, .xls ou .csv válido.");
+        setParseError(err?.message || "NÃ£o foi possÃ­vel ler este arquivo. Confirme se Ã© um .xlsx, .xls ou .csv vÃ¡lido.");
       });
   }, []);
 
@@ -458,7 +443,7 @@ const App = () => {
       setHistory(savedHistory);
       return savedHistory;
     } catch (error) {
-      console.warn("Não foi possível carregar o histórico.", error);
+      console.warn("NÃ£o foi possÃ­vel carregar o histÃ³rico.", error);
       return [];
     }
   };
@@ -470,7 +455,7 @@ const App = () => {
           [header]: exact[header] ?? ""
         }), {})
       : {};
-    const status = exact ? "ENCONTRADO" : "NÃO ENCONTRADO";
+    const status = exact ? "ENCONTRADO" : "NÃƒO ENCONTRADO";
     setHistory((previousHistory) => {
       const nextNumber = previousHistory.reduce(
         (highest, item) => Math.max(highest, Number(item.number) || 0),
@@ -543,13 +528,13 @@ const App = () => {
       time: new Date().toLocaleTimeString("pt-BR", { hour12: false }),
       code: `CX${deleteBoxCandidate.number}`,
       description: deleteBoxCandidate.description || "",
-      action: "CAIXA EXCLUÍDA",
+      action: "CAIXA EXCLUÃDA",
       box: deleteBoxCandidate.number,
       user: ""
     }, ...previous]);
     if (activeBoxId === deleteBoxCandidate.id) setActiveBoxId("");
     setDeleteBoxCandidate(null);
-    setExportMessage(`CAIXA ${deleteBoxCandidate.number} excluída${materialCodes.length ? ` e ${materialCodes.length} material(is) removido(s) do estoque` : ""}.`);
+    setExportMessage(`CAIXA ${deleteBoxCandidate.number} excluÃ­da${materialCodes.length ? ` e ${materialCodes.length} material(is) removido(s) do estoque` : ""}.`);
   };
 
   const finishActiveBox = () => {
@@ -563,7 +548,7 @@ const App = () => {
     if (!activeBox) return;
     const existingBox = boxes.find((box) => box.materials?.some((material) => normalizeValue(material.code) === normalizeValue(code)));
     if (existingBox && existingBox.id !== activeBox.id) {
-      const shouldTransfer = window.confirm(`Este material já está armazenado na CAIXA ${existingBox.number}.\n\nOK: transferir para ${activeBox.number}\nCancelar: manter na caixa atual`);
+      const shouldTransfer = window.confirm(`Este material jÃ¡ estÃ¡ armazenado na CAIXA ${existingBox.number}.\n\nOK: transferir para ${activeBox.number}\nCancelar: manter na caixa atual`);
       if (!shouldTransfer) return;
       setBoxes((previous) => previous.map((box) => {
         if (box.id === existingBox.id) return { ...box, materials: box.materials.filter((material) => normalizeValue(material.code) !== normalizeValue(code)) };
@@ -574,7 +559,7 @@ const App = () => {
       return;
     }
     if (existingBox && existingBox.id === activeBox.id) {
-      if (!window.confirm("ATENÇÃO: este material já foi registrado nesta caixa.\n\nAdicionar novamente?")) return;
+      if (!window.confirm("ATENÃ‡ÃƒO: este material jÃ¡ foi registrado nesta caixa.\n\nAdicionar novamente?")) return;
     }
     setBoxes((previous) => previous.map((box) => box.id === activeBox.id ? {
       ...box,
@@ -622,7 +607,7 @@ const App = () => {
 
   const clearHistory = () => {
     if (!history.length) return;
-    if (window.confirm("Deseja realmente limpar todo o histórico de leituras?")) {
+    if (window.confirm("Deseja realmente limpar todo o histÃ³rico de leituras?")) {
       storageService.removeHistory();
       setHistory([]);
     }
@@ -643,29 +628,14 @@ const App = () => {
     Caixa: boxes.find((box) => box.materials?.some((material) => normalizeValue(material.code) === normalizeValue(item.code)))?.number || ""
   }));
 
-  const getExportFileName = (extension, prefix = "Historico_Bipagens") => {
-    const now = new Date();
-    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}`;
-    return `${prefix}_${stamp}.${extension}`;
-  };
-
   const saveLocalHistory = async (format = "xlsx") => {
     if (!history.length) {
-      setExportMessage("Não há bipagens para exportar.");
+      setExportMessage("NÃ£o hÃ¡ bipagens para exportar.");
       return;
     }
     const fileName = getExportFileName(format);
     const rowsToExport = getExportRows();
-    let blob;
-    if (format === "csv") {
-      const worksheet = excelService.buildBipagensRows(history, displayColumns, boxes);
-      const csv = excelService.buildHistoryBlob(rowsToExport, "csv");
-      blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
-    } else {
-      const worksheet = excelService.buildBipagensRows(history, displayColumns, boxes);
-      const workbook = excelService.buildHistoryBlob(rowsToExport, "xlsx");
-      blob = new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    }
+    const blob = excelService.buildHistoryFileBlob(rowsToExport, format);
     try {
       if (window.showDirectoryPicker) {
         const directory = await window.showDirectoryPicker({ mode: "readwrite" });
@@ -675,7 +645,7 @@ const App = () => {
         const writable = await fileHandle.createWritable();
         await writable.write(blob);
         await writable.close();
-        setExportMessage("Histórico salvo com sucesso em: Controle de Estoque > Historico");
+        setExportMessage("HistÃ³rico salvo com sucesso em: Controle de Estoque > Historico");
         return;
       }
     } catch (error) {
@@ -698,8 +668,8 @@ const App = () => {
     reader.onload = () => {
       try {
         const payload = JSON.parse(reader.result);
-        if (payload.version !== constants.BACKUP_VERSION || !Array.isArray(payload.history) || !Array.isArray(payload.boxes)) throw new Error("Formato inválido");
-        if (!window.confirm("Restaurar o backup substituirá os dados locais atuais. Continuar?")) {
+        if (payload.version !== constants.BACKUP_VERSION || !Array.isArray(payload.history) || !Array.isArray(payload.boxes)) throw new Error("Formato invÃ¡lido");
+        if (!window.confirm("Restaurar o backup substituirÃ¡ os dados locais atuais. Continuar?")) {
           event.target.value = "";
           return;
         }
@@ -716,7 +686,7 @@ const App = () => {
         storageService.saveMovements(Array.isArray(payload.movements) ? payload.movements : []);
         setExportMessage("Backup restaurado com sucesso.");
       } catch (error) {
-        setExportMessage("Não foi possível restaurar este backup.");
+        setExportMessage("NÃ£o foi possÃ­vel restaurar este backup.");
       }
       event.target.value = "";
     };
@@ -779,27 +749,6 @@ const App = () => {
     );
   };
 
-  const runSearch = (value) => {
-    const q = String(value ?? query).trim().toLowerCase();
-    if (!q) {
-      setMatched(null);
-      setSearchState("idle");
-      return;
-    }
-    const exact = selectedRows.find(
-      (r) =>
-        String(r[idColumn] ?? "")
-          .trim()
-          .toLowerCase() === q
-    );
-    if (exact) {
-      setMatched(exact);
-      setSearchState("found");
-    } else {
-      setMatched(null);
-      setSearchState("notfound");
-    }
-  };
 
   const onInputKeyDown = (e) => {
     if (e.key === "Enter") {
@@ -813,103 +762,6 @@ const App = () => {
     setSelectedSheets((prev) => checked ? prev.filter((n) => n !== name) : [...prev, name]);
   };
 
-  const updateBoxForMaterial = (code, exact, date, time) => {
-    if (!activeBox) return;
-    const existingBox = boxes.find((box) => box.materials?.some((material) => normalizeValue(material.code) === normalizeValue(code)));
-    if (existingBox && existingBox.id !== activeBox.id) {
-      const shouldTransfer = window.confirm(`Este material já está armazenado na CAIXA ${existingBox.number}.\n\nOK: transferir para ${activeBox.number}\nCancelar: manter na caixa atual`);
-      if (!shouldTransfer) return;
-      setBoxes((previous) => previous.map((box) => {
-        if (box.id === existingBox.id) return { ...box, materials: box.materials.filter((material) => normalizeValue(material.code) !== normalizeValue(code)) };
-        if (box.id === activeBox.id) return { ...box, materials: [...(box.materials || []), { code, description: exact && displayColumns[0] ? exact[displayColumns[0]] || "" : "", date, time }] };
-        return box;
-      }));
-      addMovement("TRANSFERIDO", code, exact, activeBox.number);
-      return;
-    }
-    if (existingBox && existingBox.id === activeBox.id) {
-      if (!window.confirm("ATENÇÃO: este material já foi registrado nesta caixa.\n\nAdicionar novamente?")) return;
-    }
-    setBoxes((previous) => previous.map((box) => box.id === activeBox.id ? {
-      ...box,
-      materials: [...(box.materials || []), { code, description: exact && displayColumns[0] ? exact[displayColumns[0]] || "" : "", date, time }]
-    } : box));
-    addMovement(existingBox ? "BIPADO NOVAMENTE" : "BIPADO", code, exact, activeBox.number);
-  };
-
-  const processQRCode = (value) => {
-    const code = String(value ?? "").trim();
-    const scannedBox = boxes.find((box) => normalizeValue(`CX${box.number}`) === normalizeValue(code) || normalizeValue(`CAIXA-${box.number}`) === normalizeValue(code) || normalizeValue(`CAIXA ${box.number}`) === normalizeValue(code));
-    if (scannedBox) {
-      setActiveBoxId(scannedBox.id);
-      setLastProcessedCode(code);
-      setSearchState("found");
-      setExportMessage(`CAIXA ${scannedBox.number} ATIVA`);
-      if (navigator.vibrate) navigator.vibrate(100);
-      return;
-    }
-    if (!code || !readyToSearch) {
-      if (searchInputRef.current) searchInputRef.current.focus();
-      return;
-    }
-    const exact = selectedRows.find(
-      (row) => normalizeValue(row[idColumn]) === normalizeValue(code)
-    );
-    const now = new Date();
-    const date = now.toLocaleDateString("pt-BR");
-    const time = now.toLocaleTimeString("pt-BR", { hour12: false });
-    setLastProcessedCode(code);
-    setQuery("");
-    if (exact) {
-      setMatched(exact);
-      setSearchState("found");
-    } else {
-      setMatched(null);
-      setSearchState("notfound");
-    }
-    addToHistory(code, exact, date, time);
-    updateBoxForMaterial(code, exact, date, time);
-    requestAnimationFrame(() => {
-      if (searchInputRef.current) searchInputRef.current.focus();
-    });
-  };
-
-  const saveLocalHistory = async (format = "xlsx") => {
-    if (!history.length) {
-      setExportMessage("Não há bipagens para exportar.");
-      return;
-    }
-    const fileName = getExportFileName(format);
-    const rowsToExport = getExportRows();
-    let blob;
-    if (format === "csv") {
-      const worksheet = excelService.buildBipagensRows(history, displayColumns, boxes);
-      const csv = XLSX.utils.sheet_to_csv(worksheet);
-      blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
-    } else {
-      const worksheet = excelService.buildBipagensRows(history, displayColumns, boxes);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Bipagens");
-      blob = new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    }
-    try {
-      if (window.showDirectoryPicker) {
-        const directory = await window.showDirectoryPicker({ mode: "readwrite" });
-        const root = await directory.getDirectoryHandle("Controle de Estoque", { create: true });
-        const historyDirectory = await root.getDirectoryHandle("Historico", { create: true });
-        const fileHandle = await historyDirectory.getFileHandle(fileName, { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        setExportMessage("Histórico salvo com sucesso em: Controle de Estoque > Historico");
-        return;
-      }
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-    }
-    const downloadService = excelService.downloadBlob(blob, fileName);
-    setExportMessage(`Download criado: ${fileName}`);
-  };
 
   const onClearQuery = () => {
     setQuery("");
@@ -917,71 +769,7 @@ const App = () => {
     setSearchState("idle");
   };
 
-  const onRunSearch = (query) => runSearch(query);
 
-  const onOpenScanner = () => {
-    setScannerStatus("");
-    setScannerOpen(true);
-  };
-
-  const toggleHighlightedField = (field) => {
-    setHighlightedFields((previous) =>
-      previous.includes(field)
-        ? previous.filter((item) => item !== field)
-        : [...previous, field]
-    );
-  };
-
-  const onSelectIdColumn = (value) => {
-    setIdColumn(value);
-    setDisplayColumns(headers.filter((h) => h !== value));
-    setQuery("");
-    setMatched(null);
-    setSearchState("idle");
-  };
-
-  const onToggleSheet = (name, checked) => {
-    setSelectedSheets((prev) => checked ? prev.filter((n) => n !== name) : [...prev, name]);
-  };
-
-  const onUpdateColorRule = (group, key, value) => {
-    setColorRules((prev) => ({
-      ...prev,
-      [group]: {
-        ...prev[group],
-        [key]: value
-      }
-    }));
-  };
-
-  const onHighlightColumnChange = (value) => {
-    setHighlightRule((previous) => ({ ...previous, column: value }));
-  };
-
-  const onHighlightValueChange = (value) => {
-    setHighlightRule((previous) => ({ ...previous, value: value }));
-  };
-
-  const onHighlightColorChange = (value) => {
-    setHighlightRule((previous) => ({ ...previous, color: value }));
-  };
-
-  const onToggleColumn = (h) => {
-    setDisplayColumns(
-      (prev) =>
-        prev.includes(h)
-          ? prev.filter((c) => c !== h)
-          : [...prev, h]
-    );
-  };
-
-  const onInputKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const scannedValue = e.currentTarget.value;
-      processQRCode(scannedValue);
-    }
-  };
 
   return (
     <div
@@ -1110,7 +898,7 @@ const App = () => {
       {/* Step 4: Historical Data (Panel) */}
       <Panel
         step={4}
-        title="Histórico de leituras"
+        title="HistÃ³rico de leituras"
         description="Acompanhe os materiais identificados pelos QR Codes"
         active={true}
         trailing={
@@ -1139,7 +927,7 @@ const App = () => {
                 fontSize: 12
               }}
             >
-              EXPORTAR HISTÓRICO
+              EXPORTAR HISTÃ“RICO
             </button>
             <button
               onClick={clearHistory}
@@ -1154,7 +942,7 @@ const App = () => {
                 fontSize: 12
               }}
             >
-              Limpar histórico
+              Limpar histÃ³rico
             </button>
             <Backup
               historyLength={history.length}
@@ -1175,14 +963,14 @@ const App = () => {
                 fontSize: 12
               }}
             >
-              {showFullHistory ? "MOSTRAR ÚLTIMOS 10" : "VER HISTÓRICO COMPLETO"}
+              {showFullHistory ? "MOSTRAR ÃšLTIMOS 10" : "VER HISTÃ“RICO COMPLETO"}
             </button>
           </div>
         }
       >
         {!history.length ? (
           <div style={{ fontSize: 13, color: constants.INK_SOFT }}>
-            Os QR Codes bipados aparecerão aqui.
+            Os QR Codes bipados aparecerÃ£o aqui.
           </div>
         ) : (
           <>
@@ -1190,7 +978,7 @@ const App = () => {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
                 <thead>
                   <tr>
-                    {["Nº", "Data", "Hora", "QR Code", "Status", ...displayColumns.slice(0, 2)].map((header) => (
+                    {["NÂº", "Data", "Hora", "QR Code", "Status", ...displayColumns.slice(0, 2)].map((header) => (
                       <th
                         key={header}
                         style={{
@@ -1238,7 +1026,7 @@ const App = () => {
               {history.slice(0, showFullHistory ? history.length : 10).map((item) => (
                 <article className="history-card" key={`card-${item.number}-${item.date}-${item.time}`}>
                   <div>
-                    <div className="history-card-label">Código</div>
+                    <div className="history-card-label">CÃ³digo</div>
                     <div className="history-card-value history-card-code">{item.code}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
@@ -1259,7 +1047,6 @@ const App = () => {
           </>
         )}
       </Panel>
-    </div>
 
       {/* Scanner Modal */}
       <QRScanner

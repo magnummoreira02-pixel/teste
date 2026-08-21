@@ -1,0 +1,162 @@
+import Icon from "./ui/Icon.jsx";
+import Panel from "./ui/Panel.jsx";
+
+export default function BuscaMaterial({
+  readyToSearch,
+  idColumn,
+  query,
+  searchState,
+  matched,
+  matchedRowColor,
+  matchedAvancoStatus,
+  matchedAvancoColor,
+  matchedAvancoTextColor,
+  matchedAvancoValue,
+  suggestions = [],
+  displayColumns = [],
+  highlightedFields = [],
+  highlightedFieldsColor,
+  lastProcessedCode,
+  searchInputRef,
+  onQueryChange,
+  onInputKeyDown,
+  onClearQuery,
+  onRunSearch,
+  onOpenScanner
+}) {
+  return (
+    <Panel
+      step={3}
+      title="Buscar material"
+      description={readyToSearch ? `Bipe o QR Code ou digite o código (${idColumn})` : "Importe uma planilha e configure a coluna de código para começar"}
+    >
+      <div className="reader-frame" style={{ display: "flex", gap: 12, padding: 16, flexWrap: "wrap" }}>
+        <input
+          ref={searchInputRef}
+          value={query}
+          disabled={!readyToSearch}
+          placeholder="Buscar material / Bipar QR Code"
+          onChange={(e) => onQueryChange?.(e.target.value)}
+          onKeyDown={onInputKeyDown}
+          style={{
+            flex: 1,
+            minWidth: 220,
+            padding: "14px 18px",
+            fontSize: 16,
+            border: "1px solid var(--border)",
+            background: "var(--surface-soft)",
+            color: "var(--text)"
+          }}
+        />
+        <div className="reader-actions" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={onOpenScanner}
+            disabled={!readyToSearch}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "14px 22px",
+              background: "#EF4444",
+              color: "#fff",
+              border: "none",
+              cursor: readyToSearch ? "pointer" : "not-allowed",
+              fontSize: 13
+            }}
+          >
+            <Icon name="camera" size={16} /> LER QR
+          </button>
+          <button
+            type="button"
+            onClick={() => onRunSearch?.(query)}
+            disabled={!readyToSearch || !query.trim()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "14px 22px",
+              background: "#2563EB",
+              color: "#fff",
+              border: "none",
+              cursor: readyToSearch && query.trim() ? "pointer" : "not-allowed",
+              fontSize: 13
+            }}
+          >
+            <Icon name="search" size={16} /> BUSCAR
+          </button>
+        </div>
+      </div>
+
+      {suggestions.length > 0 && (
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+          {suggestions.map((row) => {
+            const value = String(row[idColumn] ?? "");
+            return (
+              <button
+                key={`${row.__sheetName}-${value}`}
+                type="button"
+                onClick={() => {
+                  onQueryChange?.(value);
+                  onRunSearch?.(value);
+                }}
+                style={{
+                  textAlign: "left",
+                  padding: "10px 14px",
+                  background: "var(--surface-soft)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  color: "var(--text)",
+                  cursor: "pointer",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 13
+                }}
+              >
+                {value}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {searchState === "notfound" && (
+        <div style={{ marginTop: 14, padding: "12px 16px", borderRadius: 10, background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#EF4444", fontWeight: 700 }}>
+          Material não encontrado.
+        </div>
+      )}
+
+      {matched && (
+        <div className="located-card" style={{ marginTop: 14, borderRadius: 14, background: matchedRowColor || "var(--surface-soft)", overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
+            <div className="located-code" style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 15, color: "var(--text)", overflowWrap: "anywhere" }}>
+              {String(matched[idColumn] ?? "")}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {matchedAvancoStatus && (
+                <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 11, fontWeight: 800, textTransform: "uppercase", background: matchedAvancoColor, color: matchedAvancoTextColor }}>
+                  AVANÇO: {matchedAvancoValue || matchedAvancoStatus}
+                </span>
+              )}
+              <button type="button" onClick={onClearQuery} style={{ background: "transparent", border: "1px solid var(--border-strong)", color: "var(--muted)", padding: "6px 10px", cursor: "pointer", fontSize: 12 }}>
+                LIMPAR
+              </button>
+            </div>
+          </div>
+
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <tbody>
+              {displayColumns.slice(0, 8).map((header) => (
+                <tr key={header}>
+                  <td style={{ padding: "9px 20px", borderBottom: "1px solid var(--border)", color: "var(--muted)", width: 180 }}>{header}</td>
+                  <td style={{ padding: "9px 20px", borderBottom: "1px solid var(--border)", color: highlightedFields.includes(header) ? highlightedFieldsColor : "var(--text)", fontWeight: highlightedFields.includes(header) ? 700 : 400, overflowWrap: "anywhere" }}>
+                    {String(matched[header] ?? "") || "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Panel>
+  );
+}

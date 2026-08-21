@@ -4,18 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ACHD Material Control</title>
-
-  <!-- React -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel para permitir JSX diretamente no HTML -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Biblioteca para leitura de Excel/CSV -->
-  <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://unpkg.com/qrcode@1.5.4/build/qrcode.min.js"></script>
-
   <style>
     * {
       margin: 0;
@@ -29,19 +17,9 @@
     }
 
     body {
-      font-family:
-        'Inter',
-        'IBM Plex Sans',
-        -apple-system,
-        BlinkMacSystemFont,
-        'Segoe UI',
-        sans-serif;
+      font-family: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0B0F19;
       color: #E8F0EB;
-      font-family: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-
-    body {
       transition: background 180ms ease, color 180ms ease;
     }
 
@@ -71,34 +49,8 @@
       background: var(--app-bg) !important;
       color: var(--text) !important;
       min-height: 100vh;
-      font-family: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
       -webkit-font-smoothing: antialiased;
       padding: 32px 20px;
-    }
-
-    .app-shell.dark {
-      --surface: #111827;
-      --surface-soft: #0B0F19;
-      --surface-raised: #1A221E;
-      --app-bg: #0B0F19;
-      --text: #E8F0EB;
-      --muted: #94a3b8;
-      --border: #1e293b;
-      --border-strong: #334155;
-      --accent: #22C55E;
-      --accent-dark: #15803D;
-      --accent-soft: rgba(34, 197, 94, 0.14);
-      --accent-bg: rgba(34, 197, 94, 0.10);
-      --warn: #EAB308;
-      --warn-bg: rgba(234, 179, 8, 0.12);
-      --danger: #EF4444;
-      --danger-bg: rgba(239, 68, 68, 0.12);
-      --purple: #A78BFA;
-      --purple-bg: rgba(167, 139, 250, 0.14);
-      --blue: #60A5FA;
-      --blue-bg: rgba(96, 165, 250, 0.14);
-      --orange: #F59E0B;
-      --orange-bg: rgba(245, 158, 11, 0.14);
     }
 
     .app-shell .panel-surface {
@@ -108,12 +60,6 @@
       border-radius: 16px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 10px 15px -3px rgba(0, 0, 0, 0.3);
       overflow: hidden;
-    }
-
-    .app-shell .panel-surface > div,
-    .app-shell table,
-    .app-shell select {
-      color: var(--text) !important;
     }
 
     .app-shell input,
@@ -128,17 +74,6 @@
     .app-shell input::placeholder { color: var(--muted) !important; }
 
     .app-shell .muted-text { color: var(--muted) !important; }
-
-    .app-shell .step-badge {
-      border-radius: 50% !important;
-    }
-
-    .app-shell.dark .step-badge {
-      border-color: var(--accent) !important;
-      color: #fff !important;
-      background: var(--accent) !important;
-      box-shadow: 0 0 0 3px var(--accent-soft);
-    }
 
     .app-shell input:focus,
     .app-shell select:focus {
@@ -228,9 +163,7 @@
       transition: transform 180ms ease;
     }
 
-    .metric-card:hover {
-      transform: translateY(-2px);
-    }
+    .metric-card:hover { transform: translateY(-2px); }
 
     .panel-surface {
       border-radius: 16px !important;
@@ -301,27 +234,15 @@
     }
 
     @media (max-width: 700px) {
-      .app-shell {
-        padding: 16px 12px !important;
-      }
-
-      .agro-header {
-        margin-bottom: 20px;
-        padding: 20px;
-      }
-
+      .app-shell { padding: 16px 12px !important; }
+      .agro-header { margin-bottom: 20px; padding: 20px; }
       .brand-mark { min-width: 0; }
       .brand-mark > div:last-child { min-width: 0; }
       .brand-mark > div:last-child > div:first-child {
         font-size: clamp(16px, 4vw, 22px) !important;
         overflow-wrap: anywhere;
       }
-
-      .metric-grid {
-        gap: 16px;
-        margin-bottom: 20px;
-      }
-
+      .metric-grid { gap: 16px; margin-bottom: 20px; }
       .metric-card { padding: 16px 20px; }
       .metric-card > div:last-child { font-size: 20px !important; }
 
@@ -349,10 +270,6 @@
       }
       .history-card-value { overflow-wrap: anywhere; }
       .history-card-code { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
-
-        .inventory-row {
-          grid-template-columns: 1fr 1fr !important;
-        }
 
       .items-table-wrap { overflow-x: visible; }
       .items-table-wrap table { min-width: 0 !important; }
@@ -415,25 +332,6 @@
 
 <body>
   <div id="root"></div>
-
-  <script type="text/babel" data-presets="react,flow">
-
-    /* =========================================================
-       REACT - SIMPLIFIED SETUP
-    ========================================================= */
-
-    const { useState, useMemo, useRef, useCallback, useEffect } = React;
-
-    // Simple App component declaration
-    const App = () => {
-      // App implementation will be loaded from src/App.jsx
-      return <div>Loading...</div>;
-    };
-
-    ReactDOM.createRoot(
-      document.getElementById("root")
-    ).render(<App />);
-
-  </script>
+  <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
