@@ -1,3 +1,5 @@
+// ui components (Icon, StepBadge, Panel, ColorOption)
+
 export default function Icon({
   name,
   size = 18,
@@ -26,7 +28,7 @@ export default function Icon({
       <svg {...common}>
         <path d="M16 16l-4-4-4 4" />
         <path d="M12 12v9" />
-        <path d="M20.39 17.39A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.3" />
+        <path d="M20.39 17.39A5 5 0 0 18 8h-1.26A8 8 0 1 0 4 16.3" />
       </svg>
     ),
 
