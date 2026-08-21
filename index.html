@@ -416,19 +416,19 @@
 <body>
   <div id="root"></div>
 
-  <script type="text/babel">
+  <script type="text/babel" data-presets="react,flow">
 
     /* =========================================================
-       REACT
+       REACT - SIMPLIFIED SETUP
     ========================================================= */
 
-    const {
-      useState,
-      useMemo,
-      useRef,
-      useCallback,
-      useEffect
-    } = React;
+    const { useState, useMemo, useRef, useCallback, useEffect } = React;
+
+    // Simple App component declaration
+    const App = () => {
+      // App implementation will be loaded from src/App.jsx
+      return <div>Loading...</div>;
+    };
 
     ReactDOM.createRoot(
       document.getElementById("root")
