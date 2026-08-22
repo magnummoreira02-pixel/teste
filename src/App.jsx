@@ -887,9 +887,6 @@ const App = () => {
         onHighlightColumnChange={(value) => setHighlightRule((prev) => ({ ...prev, column: value }))}
         onHighlightValueChange={(value) => setHighlightRule((prev) => ({ ...prev, value: value }))}
         onHighlightColorChange={(value) => setHighlightRule((prev) => ({ ...prev, color: value }))}
-        onAddCodeColorRule={addCodeColorRule}
-        onUpdateCodeColorRule={updateCodeColorRule}
-        onRemoveCodeColorRule={removeCodeColorRule}
       />
 
       {/* Step 3: Search Material */}
