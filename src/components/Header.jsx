@@ -1,16 +1,12 @@
 import Icon from "./ui/Icon.jsx";
+import SeedLineLogo from "./ui/SeedLineLogo.jsx";
 
 export default function Header({ theme, onToggleTheme }) {
   return (
     <header className="agro-header">
       <div className="brand-mark">
-        <div className="brand-icon">
-          <Icon name="box" size={26} />
-        </div>
+        <SeedLineLogo height={56} theme={theme} />
         <div>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "0.02em", color: "var(--text)" }}>
-            ACHD MATERIAL CONTROL
-          </div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>
             Controle e rastreabilidade de materiais
           </div>
