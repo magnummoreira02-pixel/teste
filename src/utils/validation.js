@@ -33,14 +33,13 @@ export function getAvancoStatus(row = {}) {
   const entry = Object.entries(row).find(([key]) =>
     ["avanco", "avanço"].includes(normalizeValue(key))
   );
-  const value = normalizeValue(entry?.[1]);
+  if (!entry) return ""; // planilha não tem coluna de avanço
+  const value = normalizeValue(entry[1]);
   if (["sim", "ok", "concluido", "concluído", "feito", "true", "1"].includes(value)) {
     return "sim";
   }
-  if (["nao", "não", "pendente", "falta", "false", "0"].includes(value)) {
-    return "nao";
-  }
-  return "";
+  // qualquer outro valor (vazio, "não", "descarte", "pendente"...) conta como vermelho
+  return "nao";
 }
 
 export function getManualHighlightColor(row, highlightedFields, color) {
@@ -50,6 +49,14 @@ export function getManualHighlightColor(row, highlightedFields, color) {
     return value !== undefined && String(value).trim() !== "";
   });
   return hasMatch ? color : "";
+}
+
+export function getCodeColorRule(code, codeColorRules = []) {
+  const normalizedCode = normalizeValue(code);
+  if (!normalizedCode) return null;
+  // prefixos mais longos primeiro, para evitar que um prefixo curto "roube" o match
+  const sorted = [...codeColorRules].sort((a, b) => (b.prefix?.length || 0) - (a.prefix?.length || 0));
+  return sorted.find((rule) => rule.prefix && normalizedCode.startsWith(normalizeValue(rule.prefix))) || null;
 }
 
 export function getRowColor(sheetName, row, colorRules) {

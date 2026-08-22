@@ -88,13 +88,76 @@ export function exportHistoryWorkbook(history, headers) {
 }
 
 export function buildBoxRows(box) {
-  return (box.materials || []).map((material, index) => ({
-    Item: index + 1,
-    Codigo: material.code,
-    Descricao: material.description || "",
-    Data: material.date || "",
-    Hora: material.time || ""
-  }));
+  return (box.materials || []).map((material, index) => {
+    const rowData = material.row && Object.keys(material.row).length ? material.row : null;
+    if (rowData) {
+      // Traz todas as colunas originais da planilha + metadados de rastreio
+      return {
+        Item: index + 1,
+        ...rowData,
+        "Data Bipagem": material.date || "",
+        "Hora Bipagem": material.time || ""
+      };
+    }
+    return {
+      Item: index + 1,
+      Codigo: material.code,
+      Descricao: material.description || "",
+      Data: material.date || "",
+      Hora: material.time || ""
+    };
+  });
+}
+
+// Sanitiza nome de aba do Excel: máx. 31 caracteres, sem caracteres inválidos
+function sanitizeSheetName(name) {
+  return String(name || "CAIXA")
+    .replace(/[\\/?*[\]:]/g, "-")
+    .slice(0, 31);
+}
+
+// Exporta TODAS as caixas cheias/finalizadas em um único arquivo .xlsx,
+// com uma aba por caixa, trazendo todos os dados da planilha original.
+export function exportClosedBoxesWorkbook(closedBoxes) {
+  if (!closedBoxes?.length) return;
+  const workbook = XLSX.utils.book_new();
+  const usedNames = new Set();
+
+  closedBoxes.forEach((box) => {
+    const rowsToExport = buildBoxRows(box);
+    if (!rowsToExport.length) return;
+    let sheetName = sanitizeSheetName(`CAIXA ${box.number}`);
+    let suffix = 1;
+    while (usedNames.has(sheetName)) {
+      sheetName = sanitizeSheetName(`CAIXA ${box.number} (${suffix++})`);
+    }
+    usedNames.add(sheetName);
+    const worksheet = XLSX.utils.json_to_sheet(rowsToExport);
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  });
+
+  // Aba resumo com todos os itens de todas as caixas juntos
+  const resumoRows = closedBoxes.flatMap((box) =>
+    buildBoxRows(box).map((row) => ({ Caixa: box.number, ...row }))
+  );
+  if (resumoRows.length) {
+    const resumoSheet = XLSX.utils.json_to_sheet(resumoRows);
+    XLSX.utils.book_append_sheet(workbook, resumoSheet, "RESUMO");
+  }
+
+  const now = new Date();
+  const stamp = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0")
+  ].join("-");
+
+  downloadBlob(
+    new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    }),
+    `Caixas_Cheias_${stamp}.xlsx`
+  );
 }
 
 export function exportBoxSpreadsheet(box, format = "xlsx") {

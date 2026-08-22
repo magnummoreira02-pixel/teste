@@ -24,7 +24,16 @@ export const DEFAULT_HIGHLIGHT_COLOR = "#22C55E";
 
 export const DEFAULT_COLOR_RULES = {
   avanco: {
-    sim: "rgba(34, 197, 94, 0.14)",
-    nao: "rgba(239, 68, 68, 0.12)"
+    sim: "rgba(34, 197, 94, 0.22)",
+    nao: "rgba(239, 68, 68, 0.20)"
   }
 };
+
+// Regras de cor por prefixo de código (ex.: CE3 = roxa, E3 = verde, I5+ = azul, GMB = vermelha)
+// O usuário pode editar/adicionar essas regras em Configurar colunas.
+export const DEFAULT_CODE_COLOR_RULES = [
+  { id: "rule-ce3", prefix: "CE3", color: PURPLE, label: "Roxa" },
+  { id: "rule-e3", prefix: "E3", color: GREEN, label: "Verde" },
+  { id: "rule-i5", prefix: "I5+", color: BLUE, label: "Azul" },
+  { id: "rule-gmb", prefix: "GMB", color: RED, label: "Vermelha" }
+];

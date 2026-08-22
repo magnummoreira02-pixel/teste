@@ -12,6 +12,7 @@ export default function BuscaMaterial({
   matchedAvancoColor,
   matchedAvancoTextColor,
   matchedAvancoValue,
+  matchedCodeColorRule,
   suggestions = [],
   displayColumns = [],
   highlightedFields = [],
@@ -24,6 +25,9 @@ export default function BuscaMaterial({
   onRunSearch,
   onOpenScanner
 }) {
+  // borda forte: verde = avanço sim, vermelho = descarte/não selecionado
+  const strongBorderColor =
+    matchedAvancoStatus === "sim" ? "#22C55E" : matchedAvancoStatus === "nao" ? "#EF4444" : undefined;
   return (
     <Panel
       step={3}
@@ -126,15 +130,67 @@ export default function BuscaMaterial({
       )}
 
       {matched && (
-        <div className="located-card" style={{ marginTop: 14, borderRadius: 14, background: matchedRowColor || "var(--surface-soft)", overflow: "hidden" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
-            <div className="located-code" style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 15, color: "var(--text)", overflowWrap: "anywhere" }}>
-              {String(matched[idColumn] ?? "")}
+        <div
+          className="located-card"
+          style={{
+            marginTop: 14,
+            borderRadius: 14,
+            background: matchedRowColor || "var(--surface-soft)",
+            overflow: "hidden",
+            "--located-border": strongBorderColor
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              padding: "16px 20px",
+              borderBottom: "1px solid var(--border)",
+              background: strongBorderColor ? `${strongBorderColor}1A` : "transparent"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div className="located-code" style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 16, color: "var(--text)", overflowWrap: "anywhere" }}>
+                {String(matched[idColumn] ?? "")}
+              </div>
+              {matchedCodeColorRule && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "4px 12px",
+                    borderRadius: 999,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    background: `${matchedCodeColorRule.color}22`,
+                    color: matchedCodeColorRule.color,
+                    border: `1px solid ${matchedCodeColorRule.color}55`
+                  }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: matchedCodeColorRule.color }} />
+                  {matchedCodeColorRule.prefix} · {matchedCodeColorRule.label || "COR"}
+                </span>
+              )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {matchedAvancoStatus && (
-                <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 11, fontWeight: 800, textTransform: "uppercase", background: matchedAvancoColor, color: matchedAvancoTextColor }}>
-                  AVANÇO: {matchedAvancoValue || matchedAvancoStatus}
+                <span
+                  style={{
+                    padding: "8px 18px",
+                    borderRadius: 999,
+                    fontSize: 13,
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    background: strongBorderColor,
+                    color: "#fff",
+                    boxShadow: `0 0 0 4px ${strongBorderColor}33`
+                  }}
+                >
+                  {matchedAvancoStatus === "sim" ? "✔ AVANÇO" : "✕ DESCARTE"}
                 </span>
               )}
               <button type="button" onClick={onClearQuery} style={{ background: "transparent", border: "1px solid var(--border-strong)", color: "var(--muted)", padding: "6px 10px", cursor: "pointer", fontSize: 12 }}>

@@ -9,8 +9,11 @@ export default function ControleCaixas({
   onSelectActiveBox,
   onFinishBox,
   onExportBox,
-  onRequestDeleteBox
+  onRequestDeleteBox,
+  onExportAllClosedBoxes
 }) {
+  const closedBoxesCount = boxes.filter((box) => box.status === "ARMAZENADA" && (box.materials || []).length).length;
+
   return (
     <section className="panel-surface" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
       <header style={{ display: "flex", alignItems: "center", gap: 14, padding: "20px 24px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
@@ -18,6 +21,23 @@ export default function ControleCaixas({
           <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)" }}>Controle físico</h2>
           <p style={{ fontSize: 13, color: "var(--muted)" }}>Gerencie as caixas de armazenamento</p>
         </div>
+        <button
+          type="button"
+          onClick={onExportAllClosedBoxes}
+          disabled={!closedBoxesCount}
+          title="Exporta todas as caixas finalizadas (cheias) em um único arquivo Excel"
+          style={{
+            padding: "10px 16px",
+            background: "transparent",
+            border: `1px solid ${closedBoxesCount ? "#22C55E" : "var(--border-strong)"}`,
+            color: closedBoxesCount ? "#22C55E" : "var(--muted)",
+            cursor: closedBoxesCount ? "pointer" : "not-allowed",
+            fontSize: 12,
+            whiteSpace: "nowrap"
+          }}
+        >
+          EXPORTAR CAIXAS CHEIAS ({closedBoxesCount})
+        </button>
       </header>
 
       <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Panel from "./ui/Panel.jsx";
 
 export default function ConfiguradorColunas({
@@ -11,6 +12,7 @@ export default function ConfiguradorColunas({
   selectedSheets = [],
   colorRules,
   highlightRule,
+  codeColorRules = [],
   onSelectIdColumn,
   onToggleColumn,
   onToggleHighlightedField,
@@ -19,8 +21,14 @@ export default function ConfiguradorColunas({
   onUpdateColorRule,
   onHighlightColumnChange,
   onHighlightValueChange,
-  onHighlightColorChange
+  onHighlightColorChange,
+  onAddCodeColorRule,
+  onUpdateCodeColorRule,
+  onRemoveCodeColorRule
 }) {
+  const [newRulePrefix, setNewRulePrefix] = useState("");
+  const [newRuleColor, setNewRuleColor] = useState("#22C55E");
+
   if (!hasData) return null;
 
   return (
@@ -87,6 +95,73 @@ export default function ConfiguradorColunas({
             </div>
           </div>
         )}
+      </div>
+
+      <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
+        <label style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--muted)" }}>
+          Cor por prefixo de código
+        </label>
+        <p style={{ fontSize: 12, color: "var(--muted)", margin: "4px 0 12px" }}>
+          Ex.: códigos que começam com "CE3" aparecem com selo roxo ao bipar.
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+          {codeColorRules.map((rule) => (
+            <div key={rule.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ width: 14, height: 14, borderRadius: "50%", background: rule.color, flexShrink: 0 }} />
+              <input
+                value={rule.prefix}
+                onChange={(e) => onUpdateCodeColorRule?.(rule.id, { prefix: e.target.value.toUpperCase() })}
+                style={{ width: 90, padding: "6px 10px", border: "1px solid var(--border)" }}
+              />
+              <input
+                type="color"
+                value={rule.color}
+                onChange={(e) => onUpdateCodeColorRule?.(rule.id, { color: e.target.value })}
+                style={{ width: 36, height: 30, padding: 0, border: "1px solid var(--border)", cursor: "pointer" }}
+              />
+              <input
+                value={rule.label || ""}
+                placeholder="nome da cor (opcional)"
+                onChange={(e) => onUpdateCodeColorRule?.(rule.id, { label: e.target.value })}
+                style={{ flex: 1, minWidth: 100, padding: "6px 10px", border: "1px solid var(--border)" }}
+              />
+              <button
+                type="button"
+                onClick={() => onRemoveCodeColorRule?.(rule.id)}
+                style={{ padding: "6px 10px", background: "transparent", border: "1px solid #EF4444", color: "#EF4444", cursor: "pointer", fontSize: 12 }}
+              >
+                REMOVER
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <input
+            value={newRulePrefix}
+            onChange={(e) => setNewRulePrefix(e.target.value.toUpperCase())}
+            placeholder="Prefixo (ex: CE3)"
+            style={{ width: 130, padding: "8px 10px", border: "1px solid var(--border)" }}
+          />
+          <input
+            type="color"
+            value={newRuleColor}
+            onChange={(e) => setNewRuleColor(e.target.value)}
+            style={{ width: 36, height: 34, padding: 0, border: "1px solid var(--border)", cursor: "pointer" }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (!newRulePrefix.trim()) return;
+              onAddCodeColorRule?.({ prefix: newRulePrefix.trim(), color: newRuleColor });
+              setNewRulePrefix("");
+            }}
+            style={{ padding: "8px 16px", background: "#22C55E", border: "none", color: "#fff", cursor: "pointer", fontSize: 12 }}
+          >
+            ADICIONAR REGRA
+          </button>
+        </div>
       </div>
     </Panel>
   );

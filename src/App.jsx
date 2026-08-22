@@ -2,7 +2,6 @@
 // Updated with modern dark mode design and full functionality preservation
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import Panel from './components/ui/Panel.jsx';
 
 // Import all components
 import Header from './components/Header.jsx';
@@ -12,6 +11,8 @@ import ConfiguradorColunas from './components/ConfiguradorColunas.jsx';
 import BuscaMaterial from './components/BuscaMaterial.jsx';
 import Historico from './components/Historico.jsx';
 import Movimentacoes from './components/Movimentacoes.jsx';
+import ControleCaixas from './components/ControleCaixas.jsx';
+import ConsultaEstoque from './components/ConsultaEstoque.jsx';
 import QRScanner from './components/QRScanner.jsx';
 import DeleteBoxModal from './components/DeleteBoxModal.jsx';
 import Backup from './components/Backup.jsx';
@@ -33,7 +34,8 @@ const {
   normalizeValue,
   getAvancoStatus,
   getManualHighlightColor,
-  getRowColor
+  getRowColor,
+  getCodeColorRule
 } = utils;
 
 const { getExportFileName, nowDateString, nowTimeString } = formatting;
@@ -175,6 +177,7 @@ const App = () => {
   const backupInputRef = useRef(null);
   const [lastProcessedCode, setLastProcessedCode] = useState("");
   const [colorRules, setColorRules] = useState(constants.DEFAULT_COLOR_RULES);
+  const [codeColorRules, setCodeColorRules] = useState(constants.DEFAULT_CODE_COLOR_RULES);
   const [highlightRule, setHighlightRule] = useState({ column: "", value: "", color: constants.DEFAULT_HIGHLIGHT_COLOR });
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerStatus, setScannerStatus] = useState("");
@@ -315,6 +318,10 @@ const App = () => {
           ([key]) => ["avanco", "avanÃ§o"].includes(normalizeValue(key))
         )?.[1]
       : "";
+
+  const matchedCodeColorRule = matched
+    ? getCodeColorRule(matched[idColumn], codeColorRules)
+    : null;
 
   const foundMaterialsCount =
     history.filter((item) => item.status === "ENCONTRADO").length;
@@ -544,6 +551,17 @@ const App = () => {
     setActiveBoxId("");
   };
 
+  const buildMaterialRecord = (code, exact, date, time) => ({
+    code,
+    description: exact && displayColumns[0] ? exact[displayColumns[0]] || "" : "",
+    date,
+    time,
+    // guarda todas as colunas originais da planilha para permitir exportação completa
+    row: exact
+      ? headers.reduce((data, header) => ({ ...data, [header]: exact[header] ?? "" }), {})
+      : {}
+  });
+
   const updateBoxForMaterial = (code, exact, date, time) => {
     if (!activeBox) return;
     const existingBox = boxes.find((box) => box.materials?.some((material) => normalizeValue(material.code) === normalizeValue(code)));
@@ -552,7 +570,7 @@ const App = () => {
       if (!shouldTransfer) return;
       setBoxes((previous) => previous.map((box) => {
         if (box.id === existingBox.id) return { ...box, materials: box.materials.filter((material) => normalizeValue(material.code) !== normalizeValue(code)) };
-        if (box.id === activeBox.id) return { ...box, materials: [...(box.materials || []), { code, description: exact && displayColumns[0] ? exact[displayColumns[0]] || "" : "", date, time }] };
+        if (box.id === activeBox.id) return { ...box, materials: [...(box.materials || []), buildMaterialRecord(code, exact, date, time)] };
         return box;
       }));
       addMovement("TRANSFERIDO", code, exact, activeBox.number);
@@ -563,7 +581,7 @@ const App = () => {
     }
     setBoxes((previous) => previous.map((box) => box.id === activeBox.id ? {
       ...box,
-      materials: [...(box.materials || []), { code, description: exact && displayColumns[0] ? exact[displayColumns[0]] || "" : "", date, time }]
+      materials: [...(box.materials || []), buildMaterialRecord(code, exact, date, time)]
     } : box));
     addMovement(existingBox ? "BIPADO NOVAMENTE" : "BIPADO", code, exact, activeBox.number);
   };
@@ -693,6 +711,16 @@ const App = () => {
     reader.readAsText(file);
   };
 
+  const exportAllClosedBoxes = () => {
+    const closedBoxes = boxes.filter((box) => box.status === "ARMAZENADA" && (box.materials || []).length);
+    if (!closedBoxes.length) {
+      setExportMessage("Não há caixas finalizadas (cheias) para exportar.");
+      return;
+    }
+    excelService.exportClosedBoxesWorkbook(closedBoxes);
+    setExportMessage(`${closedBoxes.length} caixa(s) finalizada(s) exportada(s) em um único arquivo.`);
+  };
+
   const exportBox = (box, format) => {
     if (!box) return;
     const rowsToExport = excelService.buildBoxRows(box);
@@ -741,6 +769,21 @@ const App = () => {
     }));
   };
 
+  const addCodeColorRule = (rule) => {
+    setCodeColorRules((previous) => [
+      ...previous,
+      { id: `rule-${Date.now()}`, prefix: rule.prefix, color: rule.color, label: rule.label || "" }
+    ]);
+  };
+
+  const updateCodeColorRule = (id, changes) => {
+    setCodeColorRules((previous) => previous.map((rule) => rule.id === id ? { ...rule, ...changes } : rule));
+  };
+
+  const removeCodeColorRule = (id) => {
+    setCodeColorRules((previous) => previous.filter((rule) => rule.id !== id));
+  };
+
   const toggleHighlightedField = (field) => {
     setHighlightedFields((previous) =>
       previous.includes(field)
@@ -772,56 +815,18 @@ const App = () => {
 
 
   return (
-    <div
-      className={`app-shell ${theme === "dark" ? "dark" : "light"}`}
-      style={{
-        fontFamily: "'IBM Plex Sans', sans-serif",
-        background: constants.PAPER,
-        minHeight: "100vh",
-        padding: "32px 20px",
-        color: constants.INK
-      }}
-    >
-      <style>{constants.FONT_IMPORT}</style>
-
+    <div className={`app-shell ${theme === "dark" ? "dark" : ""}`}>
       {/* Header */}
       <Header theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} />
 
-      {/* KPI Cards */}
-      <Dashboard
-        rows={rows}
-        history={history}
-        boxes={boxes}
-        latestReading={latestReading}
-      />
-
-      {/* Main Content Grid */}
-      <div className="app-content">
-        <div className="desktop-main-grid">
-          {/* Left Panel: Historical Data */}
-          <div className="panel-full">
-            <Historico
-              history={history}
-              showFullHistory={showFullHistory}
-              foundMaterialsCount={foundMaterialsCount}
-              displayColumns={displayColumns}
-              onExportHistory={exportHistory}
-              onClearHistory={clearHistory}
-              onSaveHistory={saveLocalHistory}
-              onExportBackup={exportFullBackup}
-              onRestoreFile={restoreBackup}
-              onToggleFullHistory={() => setShowFullHistory((current) => !current)}
-            />
-          </div>
-
-          {/* Right Panel: Movements */}
-          <div>
-            <Movimentacoes
-              movements={movements}
-              showFullHistory={showFullHistory}
-            />
-          </div>
-        </div>
+      {/* Painel de status fixo (topo) */}
+      <div className="status-bar-sticky">
+        <Dashboard
+          rows={rows}
+          history={history}
+          boxes={boxes}
+          latestReading={latestReading}
+        />
       </div>
 
       {/* Step 1: Import Spreadsheet */}
@@ -856,6 +861,7 @@ const App = () => {
         selectedSheets={selectedSheets}
         colorRules={colorRules}
         highlightRule={highlightRule}
+        codeColorRules={codeColorRules}
         onSelectIdColumn={setIdColumn}
         onToggleColumn={toggleColumn}
         onToggleHighlightedField={toggleHighlightedField}
@@ -865,6 +871,9 @@ const App = () => {
         onHighlightColumnChange={(value) => setHighlightRule((prev) => ({ ...prev, column: value }))}
         onHighlightValueChange={(value) => setHighlightRule((prev) => ({ ...prev, value: value }))}
         onHighlightColorChange={(value) => setHighlightRule((prev) => ({ ...prev, color: value }))}
+        onAddCodeColorRule={addCodeColorRule}
+        onUpdateCodeColorRule={updateCodeColorRule}
+        onRemoveCodeColorRule={removeCodeColorRule}
       />
 
       {/* Step 3: Search Material */}
@@ -879,6 +888,7 @@ const App = () => {
         matchedAvancoColor={matchedAvancoColor}
         matchedAvancoTextColor={matchedAvancoTextColor}
         matchedAvancoValue={matchedAvancoValue}
+        matchedCodeColorRule={matchedCodeColorRule}
         suggestions={suggestions}
         displayColumns={displayColumns}
         highlightedFields={highlightedFields}
@@ -895,158 +905,75 @@ const App = () => {
         }}
       />
 
-      {/* Step 4: Historical Data (Panel) */}
-      <Panel
-        step={4}
-        title="HistÃ³rico de leituras"
-        description="Acompanhe os materiais identificados pelos QR Codes"
-        active={true}
-        trailing={
-          <div className="panel-actions">
-            <div
-              className="history-counter"
-              title="Materiais encontrados"
-            >
-              <span className="history-counter-value">
-                {foundMaterialsCount}
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                Materiais encontrados
-              </span>
-            </div>
-            <button
-              onClick={exportHistory}
-              disabled={!history.length}
-              style={{
-                border: `1px solid ${history.length ? constants.GREEN : constants.LINE_STRONG}`,
-                borderRadius: 4,
-                padding: "6px 10px",
-                background: history.length ? constants.GREEN : "transparent",
-                color: history.length ? "#fff" : constants.INK_SOFT,
-                cursor: history.length ? "pointer" : "not-allowed",
-                fontSize: 12
-              }}
-            >
-              EXPORTAR HISTÃ“RICO
-            </button>
-            <button
-              onClick={clearHistory}
-              disabled={!history.length}
-              style={{
-                border: `1px solid ${history.length ? constants.RED : constants.LINE_STRONG}`,
-                borderRadius: 4,
-                padding: "6px 10px",
-                background: "transparent",
-                color: history.length ? constants.RED : constants.INK_SOFT,
-                cursor: history.length ? "pointer" : "not-allowed",
-                fontSize: 12
-              }}
-            >
-              Limpar histÃ³rico
-            </button>
-            <Backup
-              historyLength={history.length}
+      {/* Step 4: Historico + Movimentacoes lado a lado */}
+      <div className="app-content">
+        <div className="desktop-main-grid">
+          <div className="panel-full">
+            <Historico
+              history={history}
+              showFullHistory={showFullHistory}
+              foundMaterialsCount={foundMaterialsCount}
+              displayColumns={displayColumns}
+              onExportHistory={exportHistory}
+              onClearHistory={clearHistory}
               onSaveHistory={saveLocalHistory}
               onExportBackup={exportFullBackup}
               onRestoreFile={restoreBackup}
+              onToggleFullHistory={() => setShowFullHistory((current) => !current)}
             />
-            <button
-              onClick={() => setShowFullHistory((current) => !current)}
-              disabled={history.length <= 10}
-              style={{
-                border: `1px solid ${history.length > 10 ? constants.GREEN : constants.LINE_STRONG}`,
-                borderRadius: 4,
-                padding: "6px 10px",
-                background: "transparent",
-                color: history.length > 10 ? constants.GREEN : constants.INK_SOFT,
-                cursor: history.length > 10 ? "pointer" : "not-allowed",
-                fontSize: 12
-              }}
-            >
-              {showFullHistory ? "MOSTRAR ÃšLTIMOS 10" : "VER HISTÃ“RICO COMPLETO"}
-            </button>
           </div>
-        }
-      >
-        {!history.length ? (
-          <div style={{ fontSize: 13, color: constants.INK_SOFT }}>
-            Os QR Codes bipados aparecerÃ£o aqui.
+
+          <div>
+            <Movimentacoes
+              movements={movements}
+              showFullHistory={showFullHistory}
+            />
           </div>
-        ) : (
-          <>
-            <div className="history-table-wrap">
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
-                <thead>
-                  <tr>
-                    {["NÂº", "Data", "Hora", "QR Code", "Status", ...displayColumns.slice(0, 2)].map((header) => (
-                      <th
-                        key={header}
-                        style={{
-                          textAlign: "left",
-                          padding: "8px 10px",
-                          borderBottom: `2px solid ${constants.GREEN}`,
-                          color: constants.INK,
-                          whiteSpace: "nowrap"
-                        }}
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.slice(0, showFullHistory ? history.length : 10).map((item) => (
-                    <tr key={`${item.number}-${item.date}-${item.time}`}>
-                      <td style={{ padding: "7px 10px", borderBottom: `1px solid ${constants.LINE}`, fontFamily: "'IBM Plex Mono', monospace" }}>{item.number}</td>
-                      <td style={{ padding: "7px 10px", borderBottom: `1px solid ${constants.LINE}`, whiteSpace: "nowrap" }}>{item.date}</td>
-                      <td style={{ padding: "7px 10px", borderBottom: `1px solid ${constants.LINE}`, whiteSpace: "nowrap" }}>{item.time}</td>
-                      <td style={{ padding: "7px 10px", borderBottom: `1px solid ${constants.LINE}`, fontFamily: "'IBM Plex Mono', monospace", whiteSpace: "nowrap" }}>{item.code}</td>
-                      <td
-                        style={{
-                          padding: "7px 10px",
-                          borderBottom: `1px solid ${constants.LINE}`,
-                          color: item.status === "ENCONTRADO" ? constants.GREEN : constants.RED,
-                          fontWeight: 700,
-                          whiteSpace: "nowrap"
-                        }}
-                      >
-                        {item.status}
-                      </td>
-                      {displayColumns.slice(0, 2).map((header) => (
-                        <td key={header} style={{ padding: "7px 10px", borderBottom: `1px solid ${constants.LINE}`, whiteSpace: "nowrap" }}>
-                          {item.rowData?.[header] || "-"}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="history-cards">
-              {history.slice(0, showFullHistory ? history.length : 10).map((item) => (
-                <article className="history-card" key={`card-${item.number}-${item.date}-${item.time}`}>
-                  <div>
-                    <div className="history-card-label">CÃ³digo</div>
-                    <div className="history-card-value history-card-code">{item.code}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div className="history-card-label">Status</div>
-                    <div className="history-card-value" style={{ color: item.status === "ENCONTRADO" ? constants.GREEN : constants.RED, fontWeight: 700 }}>{item.status}</div>
-                  </div>
-                  <div>
-                    <div className="history-card-label">Item</div>
-                    <div className="history-card-value">{displayColumns[0] ? item.rowData?.[displayColumns[0]] || "-" : "-"}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div className="history-card-label">Data e hora</div>
-                    <div className="history-card-value">{item.date} {item.time}</div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </>
-        )}
-      </Panel>
+        </div>
+      </div>
+
+      {/* Step 5: Controle de Caixas / Armazenamento */}
+      <div style={{ maxWidth: 1200, margin: "0 auto 24px" }}>
+        <ControleCaixas
+          boxes={boxes}
+          activeBoxId={activeBoxId}
+          newBoxDescription={newBoxDescription}
+          newBoxNote={newBoxNote}
+          onNewBoxDescriptionChange={setNewBoxDescription}
+          onNewBoxNoteChange={setNewBoxNote}
+          onCreateBox={createBox}
+          onSelectActiveBox={setActiveBoxId}
+          onFinishBox={finishActiveBox}
+          onExportBox={exportBox}
+          onRequestDeleteBox={requestDeleteBox}
+          onExportAllClosedBoxes={exportAllClosedBoxes}
+        />
+      </div>
+
+      {/* Step 6: Consulta de Estoque */}
+      <ConsultaEstoque
+        inventoryQuery={inventoryQuery}
+        onInventoryQueryChange={setInventoryQuery}
+        filteredInventory={filteredInventory}
+      />
+
+      {exportMessage && (
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: "0 auto 24px",
+            padding: "12px 20px",
+            borderRadius: 12,
+            background: "var(--accent-bg)",
+            border: "1px solid var(--accent-soft)",
+            color: "var(--accent)",
+            fontSize: 13,
+            fontWeight: 600
+          }}
+        >
+          {exportMessage}
+        </div>
+      )}
 
       {/* Scanner Modal */}
       <QRScanner
