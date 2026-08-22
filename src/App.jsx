@@ -35,7 +35,8 @@ const {
   getAvancoStatus,
   getManualHighlightColor,
   getRowColor,
-  getCodeColorRule
+  getCodeColorRule,
+  getOrderNumber
 } = utils;
 
 const { getExportFileName, nowDateString, nowTimeString } = formatting;
@@ -322,6 +323,18 @@ const App = () => {
           ([key]) => ["avanco", "avanço"].includes(normalizeValue(key))
         )?.[1]
       : "";
+
+  // Número de Ordem: lido diretamente da linha da planilha (não calculado).
+  const matchedOrderNumber = matched ? getOrderNumber(matched) : "";
+
+  // Cor da linha inteira pelo TRAIT, reutilizando exatamente a configuração
+  // existente de "Cor por prefixo de código" (codeColorRules).
+  const matchedTraitValue = matched
+    ? Object.entries(matched).find(([key]) => normalizeValue(key) === "trait")?.[1]
+    : "";
+  const matchedTraitColorRule = matched
+    ? getCodeColorRule(String(matchedTraitValue ?? ""), codeColorRules)
+    : null;
 
   const foundMaterialsCount =
     history.filter((item) => item.status === "ENCONTRADO").length;
@@ -892,6 +905,8 @@ const App = () => {
         matchedAvancoTextColor={matchedAvancoTextColor}
         matchedAvancoValue={matchedAvancoValue}
         matchedCodeColorRule={matchedCodeColorRule}
+        matchedOrderNumber={matchedOrderNumber}
+        matchedTraitColorRule={matchedTraitColorRule}
         suggestions={suggestions}
         displayColumns={displayColumns}
         highlightedFields={highlightedFields}

@@ -1,6 +1,6 @@
 import Icon from "./ui/Icon.jsx";
 import Panel from "./ui/Panel.jsx";
-import { getCodeColorRule, normalizeValue } from "../utils/validation.js";
+import { normalizeValue } from "../utils/validation.js";
 
 export default function BuscaMaterial({
   readyToSearch,
@@ -14,6 +14,8 @@ export default function BuscaMaterial({
   matchedAvancoTextColor,
   matchedAvancoValue,
   matchedCodeColorRule,
+  matchedOrderNumber,
+  matchedTraitColorRule,
   suggestions = [],
   displayColumns = [],
   highlightedFields = [],
@@ -30,6 +32,11 @@ export default function BuscaMaterial({
   // borda forte: verde = avanço sim, vermelho = descarte/não selecionado
   const strongBorderColor =
     matchedAvancoStatus === "sim" ? "#22C55E" : matchedAvancoStatus === "nao" ? "#EF4444" : undefined;
+  // cor da linha inteira: reutiliza exatamente "Cor por prefixo de código" aplicada ao TRAIT
+  const traitColor = matchedTraitColorRule?.color || "";
+  const orderNumberDisplay = matchedOrderNumber !== undefined && matchedOrderNumber !== null
+    ? String(matchedOrderNumber).trim()
+    : "";
   return (
     <Panel
       step={3}
@@ -137,7 +144,9 @@ export default function BuscaMaterial({
           style={{
             marginTop: 14,
             borderRadius: 14,
-            background: matchedRowColor || "var(--surface-soft)",
+            // Linha inteira colorida pelo TRAIT (Cor por prefixo de código).
+            // Se não houver TRAIT/cor configurada, mantém o comportamento anterior.
+            background: traitColor ? `${traitColor}29` : (matchedRowColor || "var(--surface-soft)"),
             overflow: "hidden",
             "--located-border": strongBorderColor
           }}
@@ -179,6 +188,39 @@ export default function BuscaMaterial({
               )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {orderNumberDisplay && (
+                <div
+                  title="Número de ordem (da planilha)"
+                  style={{
+                    display: "inline-flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 56,
+                    padding: "6px 14px",
+                    borderRadius: 10,
+                    background: "var(--surface)",
+                    border: "1px solid var(--border-strong)",
+                    lineHeight: 1.15
+                  }}
+                >
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--muted)" }}>
+                    Ordem
+                  </span>
+                  <span
+                    style={{
+                      color: "var(--text)",
+                      fontWeight: 800,
+                      fontSize: 18,
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      textAlign: "center",
+                      letterSpacing: "0.02em"
+                    }}
+                  >
+                    {orderNumberDisplay}
+                  </span>
+                </div>
+              )}
               {matchedAvancoStatus && (
                 <span
                   style={{
@@ -204,11 +246,8 @@ export default function BuscaMaterial({
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <tbody>
               {(() => {
-                // Reutiliza exatamente a configuração "Cor por prefixo de código"
-                const traitValue = Object.entries(matched).find(
-                  ([key]) => normalizeValue(key) === "trait"
-                )?.[1];
-                const traitColor = getCodeColorRule(String(traitValue ?? ""), codeColorRules)?.color || "";
+                // traitColor já vem calculado no topo do componente (matchedTraitColorRule),
+                // reutilizando exatamente a mesma configuração "Cor por prefixo de código".
                 return displayColumns.slice(0, 8).map((header) => {
                   const cellValue = String(matched[header] ?? "");
                   const isTraitColumn = normalizeValue(header) === "trait";

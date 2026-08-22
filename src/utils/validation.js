@@ -42,6 +42,32 @@ export function getAvancoStatus(row = {}) {
   return "nao";
 }
 
+// Lê o Número de Ordem já existente na planilha, na mesma linha do material.
+// Não calcula, não usa índice/posição/ID: apenas localiza a coluna de ordem
+// (pelo nome do cabeçalho) e devolve o valor exatamente como está na planilha.
+export function getOrderNumber(row = {}) {
+  if (!row) return "";
+  const exactCandidates = [
+    "ordem",
+    "numero de ordem",
+    "número de ordem",
+    "num ordem",
+    "n ordem",
+    "nº ordem",
+    "ordem de separacao",
+    "ordem de separação",
+    "ordem separacao",
+    "ordem separação"
+  ];
+  const exact = Object.entries(row).find(([key]) =>
+    exactCandidates.includes(normalizeValue(key))
+  );
+  if (exact) return exact[1];
+  // fallback: qualquer cabeçalho que contenha "ordem" (ex.: "Ordem separação")
+  const partial = Object.entries(row).find(([key]) => normalizeValue(key).includes("ordem"));
+  return partial ? partial[1] : "";
+}
+
 export function getManualHighlightColor(row, highlightedFields, color) {
   if (!row || !highlightedFields?.length) return "";
   const hasMatch = highlightedFields.some((field) => {
