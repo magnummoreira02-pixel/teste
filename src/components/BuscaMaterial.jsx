@@ -203,30 +203,45 @@ export default function BuscaMaterial({
 
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <tbody>
-              {displayColumns.slice(0, 8).map((header) => {
-                const cellValue = String(matched[header] ?? "");
-                const isTraitColumn = normalizeValue(header) === "trait";
+              {(() => {
                 // Reutiliza exatamente a configuração "Cor por prefixo de código"
-                const traitColor = isTraitColumn
-                  ? getCodeColorRule(cellValue, codeColorRules)?.color || ""
-                  : "";
-                return (
-                  <tr key={header}>
-                    <td style={{ padding: "9px 20px", borderBottom: "1px solid var(--border)", color: "var(--muted)", width: 180 }}>{header}</td>
-                    <td
-                      style={{
-                        padding: "9px 20px",
-                        borderBottom: "1px solid var(--border)",
-                        color: traitColor || (highlightedFields.includes(header) ? highlightedFieldsColor : "var(--text)"),
-                        fontWeight: traitColor || highlightedFields.includes(header) ? 700 : 400,
-                        overflowWrap: "anywhere"
-                      }}
-                    >
-                      {cellValue || "-"}
-                    </td>
-                  </tr>
-                );
-              })}
+                const traitValue = Object.entries(matched).find(
+                  ([key]) => normalizeValue(key) === "trait"
+                )?.[1];
+                const traitColor = getCodeColorRule(String(traitValue ?? ""), codeColorRules)?.color || "";
+                return displayColumns.slice(0, 8).map((header) => {
+                  const cellValue = String(matched[header] ?? "");
+                  const isTraitColumn = normalizeValue(header) === "trait";
+                  return (
+                    <tr key={header}>
+                      <td
+                        style={{
+                          padding: "9px 20px",
+                          borderBottom: "1px solid var(--border)",
+                          color: "var(--muted)",
+                          width: 180,
+                          background: traitColor ? `${traitColor}14` : undefined,
+                          borderLeft: traitColor ? `3px solid ${traitColor}` : undefined
+                        }}
+                      >
+                        {header}
+                      </td>
+                      <td
+                        style={{
+                          padding: "9px 20px",
+                          borderBottom: "1px solid var(--border)",
+                          background: traitColor ? `${traitColor}14` : undefined,
+                          color: isTraitColumn && traitColor ? traitColor : (highlightedFields.includes(header) ? highlightedFieldsColor : "var(--text)"),
+                          fontWeight: isTraitColumn && traitColor || highlightedFields.includes(header) ? 700 : 400,
+                          overflowWrap: "anywhere"
+                        }}
+                      >
+                        {cellValue || "-"}
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
             </tbody>
           </table>
         </div>
