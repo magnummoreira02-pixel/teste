@@ -1,5 +1,6 @@
 import Icon from "./ui/Icon.jsx";
 import Panel from "./ui/Panel.jsx";
+import { getCodeColorRule, normalizeValue } from "../utils/validation.js";
 
 export default function BuscaMaterial({
   readyToSearch,
@@ -17,6 +18,7 @@ export default function BuscaMaterial({
   displayColumns = [],
   highlightedFields = [],
   highlightedFieldsColor,
+  codeColorRules = [],
   lastProcessedCode,
   searchInputRef,
   onQueryChange,
@@ -201,14 +203,30 @@ export default function BuscaMaterial({
 
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <tbody>
-              {displayColumns.slice(0, 8).map((header) => (
-                <tr key={header}>
-                  <td style={{ padding: "9px 20px", borderBottom: "1px solid var(--border)", color: "var(--muted)", width: 180 }}>{header}</td>
-                  <td style={{ padding: "9px 20px", borderBottom: "1px solid var(--border)", color: highlightedFields.includes(header) ? highlightedFieldsColor : "var(--text)", fontWeight: highlightedFields.includes(header) ? 700 : 400, overflowWrap: "anywhere" }}>
-                    {String(matched[header] ?? "") || "-"}
-                  </td>
-                </tr>
-              ))}
+              {displayColumns.slice(0, 8).map((header) => {
+                const cellValue = String(matched[header] ?? "");
+                const isTraitColumn = normalizeValue(header) === "trait";
+                // Reutiliza exatamente a configuração "Cor por prefixo de código"
+                const traitColor = isTraitColumn
+                  ? getCodeColorRule(cellValue, codeColorRules)?.color || ""
+                  : "";
+                return (
+                  <tr key={header}>
+                    <td style={{ padding: "9px 20px", borderBottom: "1px solid var(--border)", color: "var(--muted)", width: 180 }}>{header}</td>
+                    <td
+                      style={{
+                        padding: "9px 20px",
+                        borderBottom: "1px solid var(--border)",
+                        color: traitColor || (highlightedFields.includes(header) ? highlightedFieldsColor : "var(--text)"),
+                        fontWeight: traitColor || highlightedFields.includes(header) ? 700 : 400,
+                        overflowWrap: "anywhere"
+                      }}
+                    >
+                      {cellValue || "-"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

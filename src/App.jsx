@@ -1,4 +1,4 @@
-﻿// ACHD Material Control - Complete Modular Implementation
+// ACHD Material Control - Complete Modular Implementation
 // Updated with modern dark mode design and full functionality preservation
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
@@ -218,7 +218,7 @@ const App = () => {
         const results = await detector.detect(scannerVideoRef.current);
         if (results.length > 0 && results[0].rawValue) {
           const value = results[0].rawValue;
-          setScannerStatus("Leitura concluÃ­da");
+          setScannerStatus("Leitura concluída");
           if (navigator.vibrate) navigator.vibrate(120);
           try {
             const audio = new AudioContext();
@@ -238,22 +238,22 @@ const App = () => {
           return;
         }
       } catch (error) {
-        setScannerStatus("Aponte a cÃ¢mera para um QR Code");
+        setScannerStatus("Aponte a câmera para um QR Code");
       }
       animationFrame = requestAnimationFrame(() => scanFrame(detector));
     };
 
     const startScanner = async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setScannerStatus("CÃ¢mera indisponÃ­vel. Digite o cÃ³digo abaixo.");
+        setScannerStatus("Câmera indisponível. Digite o código abaixo.");
         return;
       }
       if (!window.BarcodeDetector) {
-        setScannerStatus("Este navegador nÃ£o detecta QR automaticamente. Digite o cÃ³digo abaixo.");
+        setScannerStatus("Este navegador não detecta QR automaticamente. Digite o código abaixo.");
         return;
       }
       try {
-        setScannerStatus("Solicitando acesso Ã  cÃ¢mera...");
+        setScannerStatus("Solicitando acesso à câmera...");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
           audio: false
@@ -265,10 +265,10 @@ const App = () => {
         scannerStreamRef.current = stream;
         scannerVideoRef.current.srcObject = stream;
         await scannerVideoRef.current.play();
-        setScannerStatus("Aponte a cÃ¢mera para um QR Code");
+        setScannerStatus("Aponte a câmera para um QR Code");
         scanFrame(new BarcodeDetector({ formats: ["qr_code"] }));
       } catch (error) {
-        setScannerStatus("NÃ£o foi possÃ­vel acessar a cÃ¢mera. Verifique a permissÃ£o.");
+        setScannerStatus("Não foi possível acessar a câmera. Verifique a permissão.");
       }
     };
 
@@ -300,6 +300,10 @@ const App = () => {
     ? getRowColor(matched.__sheetName, matched, colorRules)
     : "";
 
+  const matchedCodeColorRule = matched && idColumn
+    ? getCodeColorRule(matched[idColumn], codeColorRules)
+    : null;
+
   const matchedAvancoStatus = matched ? getAvancoStatus(matched) : "";
 
   const matchedAvancoColor =
@@ -315,19 +319,15 @@ const App = () => {
   const matchedAvancoValue =
     matched
       ? Object.entries(matched).find(
-          ([key]) => ["avanco", "avanÃ§o"].includes(normalizeValue(key))
+          ([key]) => ["avanco", "avanço"].includes(normalizeValue(key))
         )?.[1]
       : "";
-
-  const matchedCodeColorRule = matched
-    ? getCodeColorRule(matched[idColumn], codeColorRules)
-    : null;
 
   const foundMaterialsCount =
     history.filter((item) => item.status === "ENCONTRADO").length;
 
   const notFoundMaterialsCount =
-    history.filter((item) => item.status === "NÃƒO ENCONTRADO").length;
+    history.filter((item) => item.status === "NÃO ENCONTRADO").length;
 
   const latestReading = history[0];
 
@@ -371,7 +371,7 @@ const App = () => {
       })
       .catch((err) => {
         console.error(err);
-        setParseError(err?.message || "NÃ£o foi possÃ­vel ler este arquivo. Confirme se Ã© um .xlsx, .xls ou .csv vÃ¡lido.");
+        setParseError(err?.message || "Não foi possível ler este arquivo. Confirme se é um .xlsx, .xls ou .csv válido.");
       });
   }, []);
 
@@ -450,7 +450,7 @@ const App = () => {
       setHistory(savedHistory);
       return savedHistory;
     } catch (error) {
-      console.warn("NÃ£o foi possÃ­vel carregar o histÃ³rico.", error);
+      console.warn("Não foi possível carregar o histórico.", error);
       return [];
     }
   };
@@ -462,7 +462,7 @@ const App = () => {
           [header]: exact[header] ?? ""
         }), {})
       : {};
-    const status = exact ? "ENCONTRADO" : "NÃƒO ENCONTRADO";
+    const status = exact ? "ENCONTRADO" : "NÃO ENCONTRADO";
     setHistory((previousHistory) => {
       const nextNumber = previousHistory.reduce(
         (highest, item) => Math.max(highest, Number(item.number) || 0),
@@ -535,13 +535,13 @@ const App = () => {
       time: new Date().toLocaleTimeString("pt-BR", { hour12: false }),
       code: `CX${deleteBoxCandidate.number}`,
       description: deleteBoxCandidate.description || "",
-      action: "CAIXA EXCLUÃDA",
+      action: "CAIXA EXCLUÍDA",
       box: deleteBoxCandidate.number,
       user: ""
     }, ...previous]);
     if (activeBoxId === deleteBoxCandidate.id) setActiveBoxId("");
     setDeleteBoxCandidate(null);
-    setExportMessage(`CAIXA ${deleteBoxCandidate.number} excluÃ­da${materialCodes.length ? ` e ${materialCodes.length} material(is) removido(s) do estoque` : ""}.`);
+    setExportMessage(`CAIXA ${deleteBoxCandidate.number} excluída${materialCodes.length ? ` e ${materialCodes.length} material(is) removido(s) do estoque` : ""}.`);
   };
 
   const finishActiveBox = () => {
@@ -566,7 +566,7 @@ const App = () => {
     if (!activeBox) return;
     const existingBox = boxes.find((box) => box.materials?.some((material) => normalizeValue(material.code) === normalizeValue(code)));
     if (existingBox && existingBox.id !== activeBox.id) {
-      const shouldTransfer = window.confirm(`Este material jÃ¡ estÃ¡ armazenado na CAIXA ${existingBox.number}.\n\nOK: transferir para ${activeBox.number}\nCancelar: manter na caixa atual`);
+      const shouldTransfer = window.confirm(`Este material já está armazenado na CAIXA ${existingBox.number}.\n\nOK: transferir para ${activeBox.number}\nCancelar: manter na caixa atual`);
       if (!shouldTransfer) return;
       setBoxes((previous) => previous.map((box) => {
         if (box.id === existingBox.id) return { ...box, materials: box.materials.filter((material) => normalizeValue(material.code) !== normalizeValue(code)) };
@@ -577,7 +577,7 @@ const App = () => {
       return;
     }
     if (existingBox && existingBox.id === activeBox.id) {
-      if (!window.confirm("ATENÃ‡ÃƒO: este material jÃ¡ foi registrado nesta caixa.\n\nAdicionar novamente?")) return;
+      if (!window.confirm("ATENÇÃO: este material já foi registrado nesta caixa.\n\nAdicionar novamente?")) return;
     }
     setBoxes((previous) => previous.map((box) => box.id === activeBox.id ? {
       ...box,
@@ -625,7 +625,7 @@ const App = () => {
 
   const clearHistory = () => {
     if (!history.length) return;
-    if (window.confirm("Deseja realmente limpar todo o histÃ³rico de leituras?")) {
+    if (window.confirm("Deseja realmente limpar todo o histórico de leituras?")) {
       storageService.removeHistory();
       setHistory([]);
     }
@@ -648,7 +648,7 @@ const App = () => {
 
   const saveLocalHistory = async (format = "xlsx") => {
     if (!history.length) {
-      setExportMessage("NÃ£o hÃ¡ bipagens para exportar.");
+      setExportMessage("Não há bipagens para exportar.");
       return;
     }
     const fileName = getExportFileName(format);
@@ -663,7 +663,7 @@ const App = () => {
         const writable = await fileHandle.createWritable();
         await writable.write(blob);
         await writable.close();
-        setExportMessage("HistÃ³rico salvo com sucesso em: Controle de Estoque > Historico");
+        setExportMessage("Histórico salvo com sucesso em: Controle de Estoque > Historico");
         return;
       }
     } catch (error) {
@@ -686,8 +686,8 @@ const App = () => {
     reader.onload = () => {
       try {
         const payload = JSON.parse(reader.result);
-        if (payload.version !== constants.BACKUP_VERSION || !Array.isArray(payload.history) || !Array.isArray(payload.boxes)) throw new Error("Formato invÃ¡lido");
-        if (!window.confirm("Restaurar o backup substituirÃ¡ os dados locais atuais. Continuar?")) {
+        if (payload.version !== constants.BACKUP_VERSION || !Array.isArray(payload.history) || !Array.isArray(payload.boxes)) throw new Error("Formato inválido");
+        if (!window.confirm("Restaurar o backup substituirá os dados locais atuais. Continuar?")) {
           event.target.value = "";
           return;
         }
@@ -704,7 +704,7 @@ const App = () => {
         storageService.saveMovements(Array.isArray(payload.movements) ? payload.movements : []);
         setExportMessage("Backup restaurado com sucesso.");
       } catch (error) {
-        setExportMessage("NÃ£o foi possÃ­vel restaurar este backup.");
+        setExportMessage("Não foi possível restaurar este backup.");
       }
       event.target.value = "";
     };
@@ -862,6 +862,9 @@ const App = () => {
         colorRules={colorRules}
         highlightRule={highlightRule}
         codeColorRules={codeColorRules}
+        onAddCodeColorRule={addCodeColorRule}
+        onUpdateCodeColorRule={updateCodeColorRule}
+        onRemoveCodeColorRule={removeCodeColorRule}
         onSelectIdColumn={setIdColumn}
         onToggleColumn={toggleColumn}
         onToggleHighlightedField={toggleHighlightedField}
@@ -895,6 +898,7 @@ const App = () => {
         highlightedFieldsColor={highlightedFieldsColor}
         lastProcessedCode={lastProcessedCode}
         searchInputRef={searchInputRef}
+        codeColorRules={codeColorRules}
         onQueryChange={setQuery}
         onInputKeyDown={onInputKeyDown}
         onClearQuery={onClearQuery}
